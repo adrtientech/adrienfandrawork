@@ -1,0 +1,22 @@
+[
+  {
+    "id": "ex-1795367015750-njmo",
+    "name": "Canva",
+    "reason": "Dikecualikan atas instruksi Adrien Fandra",
+    "addedAt": "2026-11-22T17:03:35.752Z"
+  },
+  {
+    "id": "ex-1",
+    "name": "Binance",
+    "domain": "binance.com",
+    "reason": "Kategori crypto exchange - Dikecualikan untuk fokus ke SaaS & Productivity",
+    "addedAt": "2026-11-22T12:00:00.000Z"
+  },
+  {
+    "id": "ex-2",
+    "name": "1xBet",
+    "domain": "1xbet.com",
+    "reason": "Perjudian / Betting - Dilarang keras oleh kebijakan konten Adrien Fandra",
+    "addedAt": "2026-11-22T12:00:00.000Z"
+  }
+]

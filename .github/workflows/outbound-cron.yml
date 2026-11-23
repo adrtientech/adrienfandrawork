@@ -1,0 +1,43 @@
+name: Creator Outbound AI CRM Cron (Blueprint A1-C2)
+
+on:
+  schedule:
+    # Berjalan otomatis setiap 30 menit untuk Tahap B3 (05-inbox-watcher.ts) & pengiriman sesuai jendela zona waktu (Asia Pagi WIB, Eropa Sore WIB, Amerika Malam WIB)
+    - cron: '*/30 * * * *'
+  # Memungkinkan eksekusi manual kapan saja dari tab "Actions" di GitHub
+  workflow_dispatch:
+
+jobs:
+  run-outbound-engine:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Outbound 6-Stage Autonomous Pipeline
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          SERPER_API_KEY: ${{ secrets.SERPER_API_KEY }}
+          JINA_API_KEY: ${{ secrets.JINA_API_KEY }}
+          GMAIL_CLIENT_ID: ${{ secrets.GMAIL_CLIENT_ID }}
+          GMAIL_CLIENT_SECRET: ${{ secrets.GMAIL_CLIENT_SECRET }}
+          GMAIL_REFRESH_TOKEN: ${{ secrets.GMAIL_REFRESH_TOKEN }}
+          GMAIL_USER_EMAIL: ${{ secrets.GMAIL_USER_EMAIL }}
+          SAFE_TEST_MODE: ${{ secrets.SAFE_TEST_MODE }}
+          TEST_RECIPIENT_EMAIL: ${{ secrets.TEST_RECIPIENT_EMAIL }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          VERIFALIA_USERNAME: ${{ secrets.VERIFALIA_USERNAME }}
+          VERIFALIA_PASSWORD: ${{ secrets.VERIFALIA_PASSWORD }}
+        run: npm run cron:run

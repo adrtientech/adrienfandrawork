@@ -1,0 +1,9 @@
+[
+  {
+    "id": "msg-welcome",
+    "sender": "manager",
+    "text": "Halo Adrien! Saya **AI Outbound & Sponsorship Manager Utama** Anda.\n\nSaya memantau seluruh alur database CRM, status Gmail, Serper, kuota email, membawahi 6 staf AI (Tahap A1 s/d C2), dan memantau dokumen di **Asset Vault** serta daftar **Brand yang Dikecualikan (Blacklist)**.\n\nAnda dapat berdiskusi dengan saya mengenai:\n- **Strategi & Evaluasi:** Diskusi target negara prioritas, cara pitching tiap niche brand, evaluasi balasan, dan dokumen yang harus disiapkan.\n- **Pengambilan Keputusan & Perintah Operasional:** Setiap keputusan Anda (misal: *'Prioritaskan Singapura'*, *'Kecualikan brand X'*, atau *'Ubah gaya pitching cold email'*) akan langsung saya terjemahkan menjadi aturan baku operasional staf AI secara otomatis tanpa perlu mengubah kode.\n\nRiwayat diskusi kita tersimpan permanen. Apa strategi atau keputusan yang ingin kita bahas hari ini?",
+    "timestamp": "Baru saja",
+    "intent": "discussion"
+  }
+]

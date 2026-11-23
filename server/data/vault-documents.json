@@ -1,0 +1,38 @@
+[
+  {
+    "id": "doc-mediakit-1",
+    "title": "Official Media Kit & Rate Card Adrien Fandra 2026",
+    "fileName": "Adrien_Fandra_MediaKit_2026.pdf",
+    "fileSize": "2.4 MB",
+    "category": "rate_card",
+    "triggerContext": "rate_request",
+    "contextRule": "Hanya dikirim saat brand secara eksplisit membalas menanyakan rate card, harga sponsor, atau paket bundling.",
+    "isColdEmailAllowed": false,
+    "uploadedAt": "2026-11-22T10:00:00.000Z",
+    "url": "/uploads/documents/Adrien_Fandra_MediaKit_2026.pdf"
+  },
+  {
+    "id": "doc-casestudy-1",
+    "title": "Case Study & ROI Portofolio Audiens Teknologi Indonesia",
+    "fileName": "CaseStudy_Tech_Productivity_Indo.pdf",
+    "fileSize": "3.8 MB",
+    "category": "case_study",
+    "triggerContext": "proof_request",
+    "contextRule": "Hanya dikirim jika brand menanyakan data demografi audiens (180k+ developer/remote worker) atau studi kasus performa kemitraan terdahulu.",
+    "isColdEmailAllowed": false,
+    "uploadedAt": "2026-11-22T10:30:00.000Z",
+    "url": "/uploads/documents/CaseStudy_Tech_Productivity_Indo.pdf"
+  },
+  {
+    "id": "doc-terms-1",
+    "title": "Standard Creator Sponsorship Agreement & Deliverables SOW",
+    "fileName": "Adrien_Fandra_Standard_Agreement.pdf",
+    "fileSize": "1.1 MB",
+    "category": "contract",
+    "triggerContext": "contract_deal",
+    "contextRule": "Hanya dikirim saat brand telah menyetujui tier harga dan siap menandatangani kesepakatan kerjasama (tahap Deal).",
+    "isColdEmailAllowed": false,
+    "uploadedAt": "2026-11-22T11:00:00.000Z",
+    "url": "/uploads/documents/Adrien_Fandra_Standard_Agreement.pdf"
+  }
+]
