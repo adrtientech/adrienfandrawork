@@ -254,12 +254,11 @@ export const MissionControlPage: React.FC = () => {
         await refreshData();
       }
     } catch (err: any) {
-      console.warn('Fallback response from AI Manager:', err);
-      // Fallback response with live context if backend call fails
+      console.error('Error saat menghubungi AI Manager:', err);
       const fallbackReply: ChatMessage = {
         id: `mgr-${Date.now()}`,
         sender: 'manager',
-        text: `Saya telah memeriksa pipeline saat ini:\n\n- **Total Brand:** ${brands.length}\n- **Perlu Tindakan:** ${totalActionRequired} brand\n- **Menunggu Balasan:** ${waitingCount} thread\n- **Estimasi Deal Terkumpul:** ${formatCurrencyUSD(totalDealValueUsd)}\n\nLangkah taktis yang saya sarankan: Buka menu **Action Queue** untuk meninjau balasan brand yang siap dinegosiasikan.`,
+        text: `Maaf Adrien, koneksi ke otak AI Manager sedang terputus (${err.message || 'Network Timeout'}). Mohon pastikan \`GEMINI_API_KEY\` sudah dimasukkan ke Environment Variables Vercel agar saya bisa merespons percakapan ini secara langsung.`,
         timestamp: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
         intent: 'discussion',
       };

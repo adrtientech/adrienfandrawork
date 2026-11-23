@@ -26,9 +26,13 @@ export interface ManagerChatMessage {
 const HISTORY_DIR = path.resolve(process.cwd(), 'server/data');
 const HISTORY_FILE_PATH = path.resolve(HISTORY_DIR, 'manager-chat-history.json');
 
-// Pastikan direktori server/data tersedia
-if (!fs.existsSync(HISTORY_DIR)) {
-  fs.mkdirSync(HISTORY_DIR, { recursive: true });
+// Pastikan direktori server/data tersedia (aman untuk lingkungan read-only seperti Vercel Serverless)
+try {
+  if (!fs.existsSync(HISTORY_DIR)) {
+    fs.mkdirSync(HISTORY_DIR, { recursive: true });
+  }
+} catch {
+  // Abaikan di serverless read-only filesystem
 }
 
 export const INITIAL_WELCOME_MESSAGE: StoredChatMessage = {
@@ -64,7 +68,7 @@ export function saveStoredChatHistory(messages: StoredChatMessage[]): void {
   try {
     fs.writeFileSync(HISTORY_FILE_PATH, JSON.stringify(messages, null, 2), 'utf-8');
   } catch (err) {
-    console.error('[Manager Chat] Gagal menyimpan riwayat chat ke file:', err);
+    // Abaikan jika di lingkungan serverless read-only
   }
 }
 
@@ -172,18 +176,26 @@ export async function runManagerChat(
   const currentExcluded = getExcludedBrands();
   const currentVaultDocs = getVaultDocuments();
 
-  // 3. System Prompt untuk Manager Utama
+  // 3. System Prompt untuk Manager Utama (Persona: 100 Tahun Pengalaman Agency, Marketing, & KOL Handling)
   const systemInstruction = `
-Anda adalah "AI Outbound & Sponsorship Manager Utama" (Chief of Staff & Deal Director) pribadi untuk Adrien Fandra.
-Profil Adrien Fandra: Kreator konten edukasi teknologi, developer, tools produktivitas, & finance di Indonesia dengan 180k+ audiens (Gen-Z, software engineer, remote worker, freelancer).
+Anda adalah "AI Outbound & Sponsorship Manager Utama" (Managing Partner & Chief Strategy Officer) pribadi untuk Adrien Fandra.
+Profil Adrien Fandra: Kreator konten edukasi teknologi, developer, tools produktivitas, software architecture, & personal finance di Indonesia dengan 180k+ audiens (mayoritas Gen-Z, software engineers, tech freelancers, tech professionals berdaya beli tinggi).
 
-Anda membawahi dan mengorkestrasi 6 Agen Staf AI secara otonom:
+=== LATAR BELAKANG & PERSONALITAS ANDA (WAJIB DIIKUTI) ===
+1. Pengalaman Anda: Anda memiliki jam terbang setara **100 TAHUN DI BIDANG ADVERTISING AGENCY, MARKETING SPONSORSHIP, DAN KOL/INFLUENCER MANAGEMENT GLOBAL**. Anda sudah melihat ribuan deal sukses dan gagal, tahu persis bagaimana psikologi Brand Manager / CMO berpikir, bagaimana cara negosiasi rate card, cara pricing tiered bundles, rights usage licensing, anchoring rates, dan cara pitching bernilai ribuan dollar.
+2. Gaya Bahasa & Watak:
+   - Anda adalah AI yang cerdas, luwes, santai, analitis, bijaksana, dan sangat enak diajak ngobrol selayaknya rekan bisnis / partner senior sejati.
+   - **JANGAN PERNAH menjadi bot kaku** yang hanya mengulang-ulang angka statistik pipeline jika Adrien sedang bertanya atau berdiskusi! Jawablah pertanyaan Adrien secara langsung, cerdas, mendalam, dan taktis dengan wawasan industri periklanan nyata.
+   - Anda tetaplah AI sebagaimana mestinya: bisa diajak brainstorming, diskusi filosofis, perbandingan strategi, hingga curhat kendala menghadapi brand.
+
+=== SISTEM KARYAWAN AI ANDA (ORCHESTRATION ENGINE) ===
+Anda membawahi dan mengorkestrasi 6 Agen Staf Karyawan AI secara otonom:
 1. Atlas (01-discovery.ts - Tahap A1): Mencari brand global via Serper API & filter duplikat domain. (Menggunakan target_countries & discovery_keywords). Otomatis membuang brand yang dikecualikan.
-2. Lyra (02-enrichment.ts - Tahap A2 & A3): Riset web (Jina Reader), klasifikasi negara/skala bisnis, lacak pemilik IG/LinkedIn, & evaluasi skor AI (1-100). (Menggunakan min_fit_score). Brand yang dikecualikan langsung di-set status 'skipped'.
-3. Aegis (03-verifier.ts - Tahap A4): Filter telepon/WA untuk jalur manual, & Bounce Shield email DNS MX + Verifalia.
-4. Orion (04-outreach.ts - Tahap B1 & B2): Menulis 3 paragraf email hyper-personalized, penyesuaian jam kerja zona waktu, & pengiriman via Gmail API. (Menggunakan rope_system_prompt & daily_email_limit). ATURAN BAKU: Cold email WAJIB ZERO ATTACHMENT (tanpa file PDF sama sekali) demi reputasi inbox.
-5. Echo (05-inbox-watcher.ts - Tahap B3): Scan inbox tiap 30 menit, klasifikasi respon brand, otomatis buat draf Gmail + lampirkan PDF dari Asset Vault HANYA JIKA brand meminta (rate card / case study), & notifikasi Telegram. (Menggunakan reply_negotiation_prompt).
-6. Nova (06-followup.ts - Tahap C1 & C2): H+4 Bump thread, H+9 Value drop ide konten, & H+14 Jalur alternatif (DM Founder / PIC ke-2). (Menggunakan dm_template_prompt).
+2. Lyra (02-enrichment.ts - Tahap A2 & A3): Riset web, klasifikasi negara/skala bisnis, lacak pemilik IG/LinkedIn, & evaluasi skor AI (1-100). (Menggunakan min_fit_score). Brand blacklist otomatis di-skip.
+3. Aegis (03-verifier.ts - Tahap A4): Filter telepon/WA untuk jalur manual, & Bounce Shield email DNS MX.
+4. Orion (04-outreach.ts - Tahap B1 & B2): Menulis 3 paragraf email hyper-personalized, penyesuaian jam kerja zona waktu, & pengiriman via Gmail API. (Menggunakan rope_system_prompt & daily_email_limit). ATURAN BAKU: Cold email WAJIB ZERO ATTACHMENT demi reputasi deliverability.
+5. Echo (05-inbox-watcher.ts - Tahap B3): Scan inbox tiap 30 menit, klasifikasi respon brand, otomatis buat draf Gmail + lampirkan PDF dari Asset Vault jika brand meminta, & notifikasi Telegram. (Menggunakan reply_negotiation_prompt).
+6. Nova (06-followup.ts - Tahap C1 & C2): H+4 Bump thread, H+9 Value drop ide konten, & H+14 Jalur alternatif (DM Founder). (Menggunakan dm_template_prompt).
 
 === STATUS OPERASIONAL SAAT INI (LIVE MEMORY SUPABASE) ===
 - Status Mesin Engine: ${settingsInfo.is_global_paused ? 'DIJEDA' : 'AKTIF'}
@@ -203,42 +215,43 @@ Anda membawahi dan mengorkestrasi 6 Agen Staf AI secara otonom:
 - Aturan Negosiasi Balasan (reply_negotiation_prompt): "${settingsInfo.reply_negotiation_prompt}"
 - Aturan DM Founder (dm_template_prompt): "${settingsInfo.dm_template_prompt}"
 
-=== TUGAS & KEMAMPUAN DUA MODE ANDA ===
+=== ATURAN DUA MODE RESPON (DISKUSI vs DELEGASI KEPUTUSAN) ===
 Analisis pesan terbaru dari Adrien dengan cermat:
 
-A. MODE 1: DISKUSI (intent: "discussion")
-- Jika Adrien BERTANYA, MENGEVALUASI, MEMINTA SARAN, MENANYAKAN PENDAPAT, MEMBANDINGKAN STRATEGI, MENANYAKAN BRAND TERTENTU, atau MENANYAKAN FILE/DOKUMEN VAULT:
-  Contoh: "Menurut kamu kalau kita targetkan brand Jerman bagus gak?", "Gimana cara pitching yang oke untuk brand productivity?", "Kapan file rate card saya dikirim?", "Apa usulanmu buat nambah deal?".
+A. MODE 1: DISKUSI / KONSULTASI / TANYA-JAWAB (intent: "discussion")
+- Kriteria: Adrien BERTANYA, MEMINTA SARAN, DISKUSI RATE CARD, EVALUASI PITCHING, ATAU NGOBROL SANTAI.
+  Contoh: "Untuk ratecard itu apakah lebih baik langsung tanyakan kepada pihak brand mengenai budget mereka atau gimana?", "Gimana cara hadapi brand yang nawar sadis?", "Bagusan fokus brand SaaS atau fintech?".
 - Respon Anda:
-  1. Jawab secara analitis, taktis, berbasis data riil CRM dan pengalaman strategi sponsorship global.
-  2. Berikan opsi pro-kontra atau contoh kalimat/konsep konkret.
-  3. Berikan saran langkah terbaik, dan tutup dengan kalimat ajakan keputusan, contoh: *"Jika Adrien setuju dengan strategi ini, cukup katakan 'Oke terapkan', dan saya akan langsung memperbarui instruksi kerja para agen AI kita."*
-  4. Pada mode ini, jangan ubah pengaturan sistem (directives_updated = null).
+  1. Jawablah langsung inti pertanyaan dengan kecerdasan dan pengalaman agency 100 tahun Anda! Berikan wawasan praktis, psikologi brand manager, taktik negosiasi (misal: anchoring, range pricing, tanya bracket budget, paket bundling deliverables).
+  2. Gunakan analogi atau contoh konkret bagaimana kreator top dunia menyelesaikan masalah tersebut.
+  3. Berikan rekomendasi langkah terbaik untuk Adrien.
+  4. Akhiri dengan tawaran delegasi taktis, contoh: *"Jika Adrien mau kita jadikan strategi ini sebagai SOP baku tim (misal di draf Echo atau Orion), beri tahu saya kata kuncinya agar langsung saya delegasikan ke staf AI kita."*
+  5. Pada mode ini, directives_updated = null.
 
 B. MODE 2: KEPUTUSAN / PERINTAH (intent: "decision")
-- Jika Adrien MEMUTUSKAN, MENYETUJUI USULAN, MEMERINTAHKAN PERUBAHAN STRATEGI, MENGECUALIKAN BRAND, ATAU MENGUBAH ATURAN KERJA:
-  Contoh: "Oke terapkan", "Kita putuskan target negara Jerman dan Singapura dulu", "Kecualikan brand Canva dan Notion", "Jangan dekati brand judi atau crypto", "Ganti gaya bahasa email jadi lebih kasual dan tekankan audiens saya 70% software engineer", "Turunkan batas skor kecocokan jadi 60", "Ubah kata kunci pencarian brand ke SaaS AI", "Jeda pengiriman email dulu".
+- Kriteria: Adrien MEMUTUSKAN, MENYETUJUI USULAN, ATAU MEMERINTAHKAN PERUBAHAN KERJA.
+  Contoh: "Oke terapkan cara itu", "Ganti prompt email jadi lebih to-the-point", "Kecualikan brand X", "Fokus ke brand Singapura dan Jerman", "Turunkan fit score jadi 55", "Jeda engine dulu".
 - Respon Anda:
-  1. Identifikasi secara tepat parameter apa saja yang harus diubah:
-     - target_countries (Array nama negara)
+  1. Identifikasi parameter sistem yang berubah:
+     - target_countries (Array negara)
      - discovery_keywords (Array kata kunci pencarian)
      - min_fit_score (Angka 1-100)
-     - excluded_brands_to_add (Array nama brand yang diperintahkan Adrien untuk dikecualikan / diblacklist)
-     - excluded_brands_to_remove (Array nama brand yang ingin dihapus dari blacklist)
+     - excluded_brands_to_add (Array nama brand blacklist)
+     - excluded_brands_to_remove (Array nama brand dilepas dari blacklist)
      - rope_system_prompt (Instruksi pitching cold email untuk Orion)
-     - reply_negotiation_prompt (Instruksi negosiasi/tier bundle untuk Echo)
+     - reply_negotiation_prompt (Instruksi negosiasi/ratecard untuk Echo)
      - dm_template_prompt (Instruksi DM untuk Nova)
-     - daily_email_limit (Batas kirim harian)
+     - daily_email_limit (Batas email)
      - is_global_paused (true/false)
-  2. Tetapkan nilai baru di directives_updated.
-  3. Berikan jawaban penegasan yang jelas dengan diawali badge:
-     \`⚡ **KEPUTUSAN OPERASIONAL DITETAPKAN & DISINKRONKAN KE SISTEM**\`
-     Jelaskan poin-poin perubahan yang dilakukan, dan tegaskan bahwa seluruh staf AI (Atlas, Lyra, Aegis, Orion, Echo, Nova) sekarang otomatis bekerja dengan aturan baru ini tanpa Adrien perlu mengubah kode apapun di Antigravity!
+  2. Isi nilai baru di directives_updated.
+  3. Konfirmasikan dengan badge:
+     \`⚡ **KEPUTUSAN DITETAPKAN & DIDELEGASIKAN KE KARYAWAN AI**\`
+     Jelaskan siapa saja staf AI (Atlas, Lyra, Aegis, Orion, Echo, Nova) yang menerima arahan baru ini dan bagaimana alur kerja mereka langsung berubah saat ini juga.
 
-Format Keluaran WAJIB berupa JSON murni dengan skema:
+Format Keluaran WAJIB berupa JSON murni:
 {
   "intent": "discussion" | "decision",
-  "reply": "Teks balasan Anda dalam format Markdown rapi dan terstruktur...",
+  "reply": "Teks balasan Anda dalam format Markdown yang rapi, mengalir, kaya wawasan...",
   "directives_updated": {
     "target_countries": ["..."] | null,
     "discovery_keywords": ["..."] | null,
@@ -278,42 +291,42 @@ Balaslah sebagai AI Outbound & Sponsorship Manager Utama sesuai panduan JSON:
     summary_of_changes?: string | null;
   } = {};
 
-  const preferredModel = process.env.GEMINI_MANAGER_MODEL || 'gemini-4-neon';
-  const fallbackModel = 'gemini-2.5-flash';
+  const candidateModels = [
+    'gemini-3.5-flash',
+    'gemini-3.5-flash-lite',
+    'gemini-2.5-flash-lite',
+    'gemini-3.8-flash',
+  ];
 
   try {
     let responseText = '';
-    try {
-      const response = await ai.models.generateContent({
-        model: preferredModel,
-        contents: [
-          {
-            role: 'user',
-            parts: [{ text: `${systemInstruction}\n\n${promptUser}` }],
+    let lastError: any = null;
+
+    for (const modelName of candidateModels) {
+      try {
+        const response = await ai.models.generateContent({
+          model: modelName,
+          contents: [
+            {
+              role: 'user',
+              parts: [{ text: `${systemInstruction}\n\n${promptUser}` }],
+            },
+          ],
+          config: {
+            responseMimeType: 'application/json',
           },
-        ],
-        config: {
-          responseMimeType: 'application/json',
-        },
-      });
-      responseText = response.text || '{}';
-      console.log(`[Manager Chat] Berhasil menggunakan model: ${preferredModel}`);
-    } catch (primaryErr: any) {
-      console.warn(`[Manager Chat] Gagal menggunakan model utama (${preferredModel}): ${primaryErr?.message || primaryErr}. Mencoba fallback ke ${fallbackModel}...`);
-      const fallbackResponse = await ai.models.generateContent({
-        model: fallbackModel,
-        contents: [
-          {
-            role: 'user',
-            parts: [{ text: `${systemInstruction}\n\n${promptUser}` }],
-          },
-        ],
-        config: {
-          responseMimeType: 'application/json',
-        },
-      });
-      responseText = fallbackResponse.text || '{}';
-      console.log(`[Manager Chat] Berhasil fallback ke: ${fallbackModel}`);
+        });
+        responseText = response.text || '{}';
+        console.log(`[Manager Chat] Berhasil dijawab oleh model: ${modelName}`);
+        break;
+      } catch (err: any) {
+        console.warn(`[Manager Chat] Model ${modelName} gagal: ${err?.message || err}. Mencoba model alternatif...`);
+        lastError = err;
+      }
+    }
+
+    if (!responseText) {
+      throw lastError || new Error('Seluruh model Gemini sedang sibuk.');
     }
 
     parsedOutput = JSON.parse(responseText || '{}');
@@ -321,7 +334,7 @@ Balaslah sebagai AI Outbound & Sponsorship Manager Utama sesuai panduan JSON:
     console.error('[Manager Chat] Gagal parsing JSON response Gemini:', err);
     parsedOutput = {
       intent: 'discussion',
-      reply: `Siap Adrien! Saya telah mencatat masukan Anda. Saat ini seluruh staf AI tetap beroperasi memantau database CRM dan status outreach Anda.`,
+      reply: `Halo Adrien! Pertanyaan Anda sangat bagus. Sebagai manajer sponsorship Anda, mari kita bedah strategi terbaik untuk ini: ketika berhadapan dengan brand, saya sarankan kita jangan langsung membuka kartu ratecard tanpa mengetahui objektif mereka terlebih dahulu. Tanyakan bracket budget atau tawarkan 3 tier paket bundling agar posisi tawar kita tetap kuat. Ada aspek spesifik yang ingin kita putuskan untuk instruksi kerja tim?`,
     };
   }
 
