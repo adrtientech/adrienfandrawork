@@ -23,6 +23,13 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
+      - name: Setup .env from single secret
+        if: env.ENV_CONTENT != ''
+        env:
+          ENV_CONTENT: ${{ secrets.ENV_FILE }}
+        run: |
+          echo "$ENV_CONTENT" > .env
+
       - name: Run Outbound 6-Stage Autonomous Pipeline
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
