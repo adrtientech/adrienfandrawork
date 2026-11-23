@@ -246,7 +246,7 @@ export async function runOutreachAgent(
 
   const limitForThisBatch = Math.min(maxToSend, remainingQuota);
 
-  // 2. Ambil brand yang emailnya SUDAH TERVERIFIKASI & do_not_contact = false
+  // 2. Ambil brand yang emailnya SUDAH TERVERIFIKASI
   let verifiedBrands: any[] = [];
   if (isServerSupabaseConfigured()) {
     const { data: brands, error } = await supabaseServer
@@ -255,14 +255,14 @@ export async function runOutreachAgent(
       .in('pipeline_status', ['enriched', 'verified'])
       .eq('outreach_channel', 'email_auto')
       .eq('email_verified', true)
-      .eq('do_not_contact', false)
       .not('primary_email', 'is', null)
       .limit(limitForThisBatch * 2);
 
     if (error) {
       throw new Error(`Gagal mengambil brand terverifikasi dari Supabase: ${error.message}`);
     }
-    verifiedBrands = brands || [];
+    // Filter do_not_contact secara aman (bekerja baik ada kolomnya maupun tidak di Supabase)
+    verifiedBrands = (brands || []).filter((b: any) => b.do_not_contact !== true);
   }
 
   if (verifiedBrands.length === 0) {
