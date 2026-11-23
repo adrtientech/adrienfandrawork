@@ -108,7 +108,8 @@ export async function runDiscoverAgent(limitPerRun = 5): Promise<{
   const selectedKeyword = keywords[Math.floor(Math.random() * keywords.length)];
   const selectedCountry = countries[Math.floor(Math.random() * countries.length)];
 
-  const searchQuery = `${selectedKeyword} software OR app ("Southeast Asia" OR "global" OR "pricing" OR "features") -site:g2.com -site:capterra.com`;
+  // Query bersih tanpa operator boolean bertingkat agar kompatibel dengan Serper Free tier
+  const searchQuery = `${selectedKeyword} software app`;
 
   console.log(`[Tahap A1 - 01-discovery] Mencari via Serper API: "${searchQuery}" (Target: ${selectedCountry})`);
 
