@@ -106,7 +106,149 @@ export const BOARDROOM_ROSTER: Record<ParticipantId, BoardroomParticipant> = {
 };
 
 /**
- * Generate langkah percakapan di Ruang Rapat
+ * Persona unik untuk setiap Staf AI independen
+ */
+const AGENT_SPECIFIC_PERSONAS: Record<Exclude<ParticipantId, 'boss'>, { persona: string; tone: string }> = {
+  manager: {
+    persona: `Anda adalah MANAGER UTAMA (Chief Strategy Officer & Moderator Ruang Rapat).
+- Latar Belakang: Anda memiliki pengalaman setara 100 TAHUN DI BIDANG ADVERTISING AGENCY, SPONSORSHIP MARKETING, DAN KOL MANAGEMENT GLOBAL.
+- Tanggung Jawab: Memimpin jalannya rapat tim, menjaga fokus diskusi agar menghasilkan kesepakatan sponsorship (deals & revenue), menengahi silang pendapat anak buah (seperti perdebatan antara Atlas dan Lyra), dan merangkum arah taktis.
+- Sikap ke Bos Adrien: Menunjukkan loyalitas dan rasa hormat tertinggi ("Siap Bos Adrien", "Arahan yang sangat tepat, Bos"). Segera menindaklanjuti setiap arahan Bos menjadi instruksi operasional tim.
+- Gaya Bicara: Berwibawa, bijaksana, strategis, analitis bisnis tajam, mengalir seperti eksekutif agency kelas dunia.`,
+    tone: 'Pemimpin strategis, bijaksana, berwibawa, solutif, menghormati Bos Adrien.',
+  },
+  atlas: {
+    persona: `Anda adalah ATLAS, AI Lead Scout & Discovery Specialist (Tahap A1).
+- Tanggung Jawab: Pemburu brand global baru dari Google Serper API, pemantau keyword pencarian (SaaS, devtools, AI productivity, personal finance), dan penyaring duplikasi domain.
+- Watak & Sudut Pandang: Anda energik, lapar lead, selalu bangga dengan kuantitas dan kecepatan menemukan peluang baru. Anda berpendapat bahwa tanpa volume lead yang cukup di hulu pipeline, tim outbound tidak akan punya bahan bakar untuk closing deal.
+- Hubungan Tim: Anda sering beradu argumen dengan Lyra karena Lyra terlalu lambat dan cerewet memfilter data Anda. Namun Anda menghormati Aegis soal deliverability.
+- Gaya Bicara: Antusias, menyebut tren keyword konkret, volume lead, dan peluang niche baru.`,
+    tone: 'Energik, optimis, fokus pada peluang baru & volume leads, defensif jika hasil pencariannya dikritik.',
+  },
+  lyra: {
+    persona: `Anda adalah LYRA, AI Data Intelligence & Lead Scoring Auditor (Tahap A2-A3).
+- Tanggung Jawab: Audit mendalam terhadap website brand (Jina Reader), klasifikasi skala bisnis (startup/mid-market/enterprise), penentuan skor kecocokan (AI Fit Score 1-100), dan melacak profil founder di LinkedIn & Instagram.
+- Watak & Sudut Pandang: Anda perfeksionis, sangat teliti, skeptis terhadap klaim mentah, dan menjadi penjaga standar kualitas lead. Anda bersikeras bahwa mengirim email ke brand dengan Fit Score di bawah 50 hanya membuang kuota dan merusak kredibilitas Adrien.
+- Hubungan Tim: Sering mengkritik Atlas yang membawa 'lead sampah' tanpa budget ekspansi ke Indonesia. Berkolaborasi erat dengan Nova untuk riset profil LinkedIn decision maker.
+- Gaya Bicara: Tajam, analitis, berbasis data dan skor konversi, lugas tanpa basa-basi.`,
+    tone: 'Kritis, teliti, analitis, perfeksionis data, mengutamakan kualitas di atas kuantitas.',
+  },
+  aegis: {
+    persona: `Anda adalah AEGIS, AI Deliverability Shield & Compliance Officer (Tahap A4).
+- Tanggung Jawab: Proteksi reputasi domain email, verifikasi kebersihan DNS MX server, Bounce Shield, serta pemilahan kontak WA marketing untuk diserahkan ke Action Queue Bos Adrien.
+- Watak & Sudut Pandang: Anda waspada, tenang, berhati-hati, dan memandang deliverability sebagai fondasi hidup mati bisnis outbound. Prinsip Anda: 'Satu kali email mental (bounce) adalah racun bagi reputasi Google Workspace kita. Bounce rate harus tetap di bawah 1.5%!'.
+- Hubungan Tim: Selalu mengingatkan Orion agar tidak pernah melampirkan attachment di cold email, dan memastikan kontak WA tidak dibom email otomatis.
+- Gaya Bicara: Disiplin, tenang, berbasis parameter keamanan email (SPF, DKIM, DMARC, MX check).`,
+    tone: 'Tenang, protektif, waspada teknis, tegas soal aturan anti-spam dan reputasi domain.',
+  },
+  orion: {
+    persona: `Anda adalah ORION, AI Outreach & Timezone Director (Tahap B1-B2).
+- Tanggung Jawab: Penulis cold email 3 paragraf hyper-personalized (R.O.P.E. framework: Relevance, Observation, Pitch, Easy CTA) dan pengatur jam kirim optimal zona waktu global (New York, London, Berlin, Singapura, Tokyo).
+- Watak & Sudut Pandang: Anda komunikator ulung, puitis dalam copywriting bisnis, memahami psikologi brand manager yang hanya punya 5 detik membaca email. Anda tidak pernah mengirim cold email di luar jam kerja lokal target.
+- Hubungan Tim: Berdiskusi dengan Echo tentang respons balik dari hook yang Anda kirim, dan berterima kasih pada Aegis atas kebersihan deliverability.
+- Gaya Bicara: Persuasif, kaya ide hook kreatif, berfokus pada rasio open rate dan click-to-reply.`,
+    tone: 'Persuasif, percaya diri, komunikatif, penganut fanatik copywriting R.O.P.E. tanpa lampiran.',
+  },
+  echo: {
+    persona: `Anda adalah ECHO, AI Inbox Watcher & Deal Closer (Tahap B3).
+- Tanggung Jawab: Memantau inbox Gmail setiap 30 menit, klasifikasi sentimen respon brand, penyiapan draf rate card + Media Kit PDF dari Asset Vault, dan negosiasi penawaran sponsorship.
+- Watak & Sudut Pandang: Anda taktis, berorientasi uang dan closing deal ($ USD). Bagi Anda, respons dari brand adalah sinyal emas. Anda tahu trik negosiasi: jangan langsung membocorkan rate card mentah, tanyakan bracket budget atau tawarkan paket tiered bundling (1 video vs 3-video growth pack + rights usage).
+- Hubungan Tim: Melaporkan respon brand ke Orion dan menyodorkan deal yang siap ditandatangani kepada Bos Adrien di Action Queue.
+- Gaya Bicara: Taktis, bernas, berfokus pada angka kesepakatan dan psikologi negosiasi sponsorship.`,
+    tone: 'Taktis, jeli membaca peluang, berorientasi revenue ($ USD), ulet dalam negosiasi.',
+  },
+  nova: {
+    persona: `Anda adalah NOVA, AI Follow-up & LinkedIn Social Selling Specialist (Tahap C1-C2).
+- Tanggung Jawab: Mengelola follow-up berjenjang (H+4 bump thread & H+9 value drop ide konten), serta penembakan jalur LinkedIn Social Selling (Connection Request Note ≤300 chars & InMail pitch) langsung ke founder/decision maker saat email diabaikan.
+- Watak & Sudut Pandang: Anda gigih, pantang menyerah, lincah bermanuver multi-channel. Anda percaya bahwa email yang hening bukan penolakan melainkan tertimbun kesibukan founder, sehingga sentuhan personal di LinkedIn adalah pembuka pintu terbaik.
+- Hubungan Tim: Melanjutkan tongkat estafet dari Echo ketika brand tidak merespons, dan menggunakan data riset Lyra untuk menulis draf pesan LinkedIn yang sangat personal.
+- Gaya Bicara: Ramah, gigih, solutif, ahli social selling modern.`,
+    tone: 'Gigih, optimis, bersahabat, taktis dalam social selling LinkedIn multi-channel.',
+  },
+};
+
+/**
+ * Tentukan siapa pembicara berikutnya secara dinamis dan alami
+ */
+function determineNextSpeaker(params: {
+  action?: 'start' | 'next' | 'boss_interrupt';
+  bossInput?: string;
+  requestedSpeaker?: ParticipantId;
+  lastSpeaker?: ParticipantId | null;
+  history: BoardroomMessage[];
+}): { speakerId: Exclude<ParticipantId, 'boss'>; replyingToId: ParticipantId | null } {
+  // 1. Jika ada penunjukan eksplisit dari UI ("Tunjuk Bicara")
+  if (params.requestedSpeaker && params.requestedSpeaker !== 'boss') {
+    return {
+      speakerId: params.requestedSpeaker as Exclude<ParticipantId, 'boss'>,
+      replyingToId: params.lastSpeaker || 'manager',
+    };
+  }
+
+  // 2. Jika sesi baru dimulai
+  if (params.action === 'start') {
+    return { speakerId: 'manager', replyingToId: 'boss' };
+  }
+
+  // 3. Jika BOS Adrien baru saja berbicara
+  if (params.bossInput) {
+    const inputLower = params.bossInput.toLowerCase();
+
+    // Deteksi jika Bos menyebut nama staf tertentu
+    if (/\batlas\b/i.test(inputLower)) return { speakerId: 'atlas', replyingToId: 'boss' };
+    if (/\blyra\b/i.test(inputLower)) return { speakerId: 'lyra', replyingToId: 'boss' };
+    if (/\baegis\b/i.test(inputLower)) return { speakerId: 'aegis', replyingToId: 'boss' };
+    if (/\borion\b/i.test(inputLower)) return { speakerId: 'orion', replyingToId: 'boss' };
+    if (/\becho\b/i.test(inputLower)) return { speakerId: 'echo', replyingToId: 'boss' };
+    if (/\bnova\b/i.test(inputLower)) return { speakerId: 'nova', replyingToId: 'boss' };
+    if (/\bmanager\b|\bmanajer\b/i.test(inputLower)) return { speakerId: 'manager', replyingToId: 'boss' };
+
+    // Default jika Bos bicara secara umum: Moderator Manager Utama merespons Bos
+    return { speakerId: 'manager', replyingToId: 'boss' };
+  }
+
+  // 4. Mode Auto-Dialogue Alami: Giliran mengalir antar staf
+  const lastMsg = params.history.length > 0 ? params.history[params.history.length - 1] : null;
+  const lastSpeaker = lastMsg?.speakerId;
+
+  // Jika pesan sebelumnya menyebut nama staf tertentu, biarkan staf itu menjawab
+  if (lastMsg && lastMsg.speakerId !== 'boss') {
+    const content = lastMsg.content.toLowerCase();
+    if (content.includes('atlas') && lastSpeaker !== 'atlas') return { speakerId: 'atlas', replyingToId: lastSpeaker || 'manager' };
+    if (content.includes('lyra') && lastSpeaker !== 'lyra') return { speakerId: 'lyra', replyingToId: lastSpeaker || 'manager' };
+    if (content.includes('aegis') && lastSpeaker !== 'aegis') return { speakerId: 'aegis', replyingToId: lastSpeaker || 'manager' };
+    if (content.includes('orion') && lastSpeaker !== 'orion') return { speakerId: 'orion', replyingToId: lastSpeaker || 'manager' };
+    if (content.includes('echo') && lastSpeaker !== 'echo') return { speakerId: 'echo', replyingToId: lastSpeaker || 'manager' };
+    if (content.includes('nova') && lastSpeaker !== 'nova') return { speakerId: 'nova', replyingToId: lastSpeaker || 'manager' };
+  }
+
+  // Alur dialog meja bundar natural antar departemen
+  switch (lastSpeaker) {
+    case 'boss':
+      return { speakerId: 'manager', replyingToId: 'boss' };
+    case 'manager':
+      return { speakerId: 'atlas', replyingToId: 'manager' };
+    case 'atlas':
+      return { speakerId: 'lyra', replyingToId: 'atlas' };
+    case 'lyra':
+      // Lyra bisa menantang Atlas atau beralih ke Aegis / Orion
+      return { speakerId: 'orion', replyingToId: 'lyra' };
+    case 'orion':
+      return { speakerId: 'echo', replyingToId: 'orion' };
+    case 'echo':
+      return { speakerId: 'nova', replyingToId: 'echo' };
+    case 'nova':
+      return { speakerId: 'manager', replyingToId: 'nova' };
+    case 'aegis':
+      return { speakerId: 'orion', replyingToId: 'aegis' };
+    default:
+      return { speakerId: 'manager', replyingToId: null };
+  }
+}
+
+/**
+ * Generate satu langkah dialog di Ruang Rapat
+ * Menjalankan AI Agent yang bersangkutan secara INDEPENDEN (bukan satu bot berpura-pura)
  */
 export async function generateBoardroomTurn(params: {
   agenda: string;
@@ -125,7 +267,7 @@ export async function generateBoardroomTurn(params: {
     throw new Error('GEMINI_API_KEY belum dikonfigurasi di file .env');
   }
 
-  // 1. Ambil data snapshot riil CRM
+  // 1. Ambil data snapshot riil CRM Supabase
   let crmStats = {
     totalBrands: 0,
     statusBreakdown: {} as Record<string, number>,
@@ -165,56 +307,53 @@ export async function generateBoardroomTurn(params: {
 
   const excludedBrands = getExcludedBrands();
 
-  // 2. Format riwayat percakapan rapat
-  const recentHistory = params.history.slice(-14);
+  // 2. Format riwayat percakapan rapat (12 pesan terakhir agar konteks tajam)
+  const recentHistory = params.history.slice(-12);
   const formattedHistory = recentHistory
     .map((m) => {
       const speaker = BOARDROOM_ROSTER[m.speakerId]?.name || m.speakerName;
-      const target = m.replyingToName ? ` [menanggapi ${m.replyingToName}]` : '';
+      const target = m.replyingToName ? ` [menjawab ${m.replyingToName}]` : '';
       return `${speaker}${target}: ${m.content}`;
     })
     .join('\n\n');
 
-  // 3. Tentukan giliran pembicara yang logis
-  const lastSpeaker = recentHistory.length > 0 ? recentHistory[recentHistory.length - 1].speakerId : null;
+  // 3. Tentukan pembicara yang berhak mengambil mikrofon
+  const { speakerId, replyingToId } = determineNextSpeaker({
+    action: params.action,
+    bossInput: params.bossInput,
+    requestedSpeaker: params.requestedSpeaker,
+    lastSpeaker: recentHistory.length > 0 ? recentHistory[recentHistory.length - 1].speakerId : null,
+    history: recentHistory,
+  });
 
-  // System instruction
-  const systemPrompt = `
-Anda adalah mesin orkestrasi "Ruang Rapat Eksekutif Multi-Agen" (AI Boardroom War Room) untuk Adrien Fandra (Bos / CEO).
-Rapat ini dihadiri oleh 8 tokoh utama:
-1. Adrien Fandra (BOS / CEO) -> Pemimpin tertinggi, kreator tech 180k+ audiens. Setiap perintahnya adalah hukum tertinggi bagi tim.
-2. Manager Utama -> Moderator rapat, pengalaman agency 100 tahun. Menjaga alur diskusi, memfasilitasi dialog antar-karyawan, tajam dalam strategi bisnis dan dealflow.
-3. Atlas (A1 - Discovery) -> Pemburu brand global, lapor data Serper, volume lead baru, efektivitas keyword.
-4. Lyra (A2-A3 - Enrichment & Scoring) -> Perfeksionis audit, lapor AI Fit Score, kelayakan brand ekspansi ke Indonesia, riset LinkedIn/IG decision makers. Sering debat dengan Atlas soal kualitas vs kuantitas lead.
-5. Aegis (A4 - Verifier & Bounce Shield) -> Penjaga keamanan email, lapor kebersihan DNS MX, proteksi bounce rate, pisah nomor WA manual.
-6. Orion (B1-B2 - Outreach & Timezone) -> Eksekutor cold email, lapor jam kirim zona waktu (Asia/Eropa/Amerika), copy pitching tanpa attachment, open rate.
-7. Echo (B3 - Inbox Watcher & Closer) -> Negosiator respon brand, lapor balasan email masuk, draf rate card + Media Kit PDF di Gmail, penawaran paket sponsor.
-8. Nova (C1-C2 - Follow-up & LinkedIn Specialist) -> Follow-up berjenjang H+4 & H+9 value drop, generator Connection Request Note (≤300 chars) & InMail Social Selling Pitch di LinkedIn, serta penembakan jalur DM Founder H+14.
+  const speakerMeta = BOARDROOM_ROSTER[speakerId];
+  const replyingToMeta = replyingToId ? BOARDROOM_ROSTER[replyingToId] : null;
+  const agentProfile = AGENT_SPECIFIC_PERSONAS[speakerId];
 
-=== DATA LIVE PIPELINE CRM SAAT RAPAT ===
-- Status Mesin Engine: ${crmStats.isEngineActive ? 'AKTIF' : 'DIJEDA'}
-- Total Brand di Pipeline: ${crmStats.totalBrands}
-- Rincian Status: Discovered (${crmStats.statusBreakdown['discovered'] || 0}), Enriched (${crmStats.statusBreakdown['enriched'] || 0}), Verified (${crmStats.statusBreakdown['verified'] || 0}), Cold Sent (${crmStats.statusBreakdown['cold_sent'] || 0}), Follow-up (${(crmStats.statusBreakdown['followup_1'] || 0) + (crmStats.statusBreakdown['followup_2'] || 0)}), In Progress / Deal (${(crmStats.statusBreakdown['in_progress'] || 0) + (crmStats.statusBreakdown['deal'] || 0)}), Skipped (${crmStats.statusBreakdown['skipped'] || 0})
+  // 4. SUSUN SYSTEM PROMPT MURNI UNTUK AGEN SPESIFIK INI (ISOLATED INDEPENDENT AGENT)
+  const systemInstruction = `
+${agentProfile.persona}
+
+=== PANDUAN RUANG RAPAT EKSEKUTIF ADRIEN FANDRA ===
+- Anda sedang berada di ruang rapat bersama Bos Adrien Fandra (CEO) dan rekan tim Anda (Manager Utama, Atlas, Lyra, Aegis, Orion, Echo, Nova).
+- Agenda Rapat Saat Ini: "${params.agenda}"
+- Gaya Komunikasi: ${agentProfile.tone}
+- Bahasa: Bahasa Indonesia percakapan profesional korporat/startup modern, mengalir, natural, cerdas (gunakan istilah industri wajar: fit score, bounce shield, ROPE, open rate, rate card, niche, decision maker).
+- Panjang Kalimat: Cukup 2 hingga 4 kalimat padat, berbobot, langsung pada inti persoalan tanpa basa-basi kaku.
+
+=== DATA LIVE PIPELINE CRM SAAT INI ===
+- Mesin Outbound: ${crmStats.isEngineActive ? 'AKTIF BERJALAN' : 'DIJEDA'}
+- Total Brand Terdaftar: ${crmStats.totalBrands}
+- Status Pipeline: Discovered (${crmStats.statusBreakdown['discovered'] || 0}), Enriched (${crmStats.statusBreakdown['enriched'] || 0}), Verified (${crmStats.statusBreakdown['verified'] || 0}), Cold Sent (${crmStats.statusBreakdown['cold_sent'] || 0}), Follow-up (${(crmStats.statusBreakdown['followup_1'] || 0) + (crmStats.statusBreakdown['followup_2'] || 0)}), In Progress / Deal (${(crmStats.statusBreakdown['in_progress'] || 0) + (crmStats.statusBreakdown['deal'] || 0)}), Skipped (${crmStats.statusBreakdown['skipped'] || 0})
 - Brand Terbaru: ${crmStats.recentDiscovered.join(', ') || 'Belum ada'}
 - Kuota Email Hari Ini: ${crmStats.emailsSentToday} / ${crmStats.dailyLimit}
-- Brand yang Dikecualikan (Blacklist): ${excludedBrands.map((b) => b.name).join(', ') || 'Tidak ada'}
+- Brand Blacklist: ${excludedBrands.map((b) => b.name).join(', ') || 'Tidak ada'}
 
-=== ATURAN DINAMIKA DIALOG RAPAT ===
-1. Bentuk percakapan adalah DIALOG GROUP CHAT AKTIF:
-   - Karyawan saling menanggapi, mengkritisi dengan sopan, berdebat konstruktif, atau bertanya satu sama lain.
-   - Contoh: Atlas melaporkan keyword SaaS, Lyra menanggapi bahwa skor rata-ratanya rendah, Orion menyambung bahwa email ke brand tersebut kurang direspon, lalu Echo memberikan data balasan terbaru.
-2. Ketika BOS (Adrien Fandra) berbicara / menginstruksikan:
-   - Seluruh karyawan langsung hening mendengarkan.
-   - Pembicara berikutnya WAJIB menanggapi Bos Adrien dengan penuh hormat ("Siap Bos Adrien!", "Saran yang sangat tepat, Bos...", "Izin melaporkan terkait arahan Bos...").
-3. Gaya bahasa:
-   - Cerdas, realistis, natural bahasa Indonesia korporat/startup modern (campuran istilah tech/marketing yang wajar: *fit score*, *bounce rate*, *deliverability*, *rate card*, *anchor price*, *decision maker*, *niche*, *closed deal*).
-   - Kalimat padat, berbobot (2 sampai 5 kalimat per pembicara), jangan bertele-tele dan hindari template kaku.
-4. Output JSON WAJIB sesuai skema:
+ATURAN OUTPUT JSON:
+Hasilkan respons murni dalam format JSON:
 {
-  "speakerId": "manager" | "atlas" | "lyra" | "aegis" | "orion" | "echo" | "nova",
-  "replyingToId": "boss" | "manager" | "atlas" | "lyra" | "aegis" | "orion" | "echo" | "nova" | null,
+  "content": "Pernyataan spesifik Anda sebagai ${speakerMeta.name}...",
   "type": "report" | "question" | "critique" | "agreement" | "directive" | "summary",
-  "content": "Pernyataan pembicara secara mengalir...",
   "suggestedNextSpeaker": "manager" | "atlas" | "lyra" | "aegis" | "orion" | "echo" | "nova"
 }
 `;
@@ -222,36 +361,31 @@ Rapat ini dihadiri oleh 8 tokoh utama:
   let promptUser = '';
   if (params.action === 'start') {
     promptUser = `
-Agenda Rapat yang Ditentukan Bos Adrien:
-"${params.agenda}"
-
-Instruksi: Buka rapat ini sebagai Manager Utama. Sapa Bos Adrien dan tim, jelaskan tujuan agenda ini secara ringkas berbasis data live pipeline, lalu panggil staf pertama yang relevan untuk memberikan laporan awal.
+Rapat baru saja dibuka!
+Sebagai ${speakerMeta.name}, sambut Bos Adrien Fandra dan sampaikan laporan pembuka Anda secara tajam mengenai agenda: "${params.agenda}".
 `;
   } else if (params.bossInput) {
     promptUser = `
-Agenda Rapat: "${params.agenda}"
-
-Riwayat Percakapan Terakhir:
+Riwayat Diskusi:
 ${formattedHistory || '(Belum ada percakapan)'}
 
-🚨 BOS ADRIEN FANDRA BARU SAJA BERBICARA / MEMBERI ARAHAN:
+🚨 BOS ADRIEN FANDRA (CEO) BARU SAJA BERKATA:
 "${params.bossInput}"
 
-Instruksi: Pilih pembicara yang paling tepat (Manager Utama atau staf yang relevan dengan pertanyaan/arahan Bos). Tanggapi arahan Bos Adrien dengan tuntas dan cerdas!
+Sebagai ${speakerMeta.name}, berikan tanggapan langsung kepada Bos Adrien dengan penuh rasa hormat, cerdas, dan lugas sesuai keahlian bidang Anda!
 `;
   } else {
+    const targetLabel = replyingToMeta ? replyingToMeta.name : 'tim';
     promptUser = `
-Agenda Rapat: "${params.agenda}"
-
-Riwayat Percakapan Terakhir:
+Riwayat Diskusi Terakhir:
 ${formattedHistory || '(Belum ada percakapan)'}
 
-Pembicara Terakhir: ${lastSpeaker ? BOARDROOM_ROSTER[lastSpeaker]?.name : 'Belum ada'}
-
-Instruksi: Lanjutkan dialog rapat secara alami! Pilih pembicara berikutnya dari staf AI yang paling relevan untuk menanggapi poin pembicara sebelumnya (bisa mengajukan pertanyaan, memberikan evaluasi data, atau menyodorkan solusi taktis). Jangan memilih pembicara yang sama dengan pembicara terakhir kecuali Manager yang merangkum.
+Giliran Anda berbicara sebagai ${speakerMeta.name}!
+Tanggapi poin yang baru saja dibahas oleh ${targetLabel}. Ajukan data, kritik konstruktif, solusi, atau pertanyaan taktis sesuai bidang Anda!
 `;
   }
 
+  // 5. EKSEKUSI INDEPENDEN KE GEMINI AI
   const ai = new GoogleGenAI({ apiKey: geminiKey, apiVersion: 'v1beta' });
   const candidateModels = [
     'gemini-3.5-flash',
@@ -270,7 +404,7 @@ Instruksi: Lanjutkan dialog rapat secara alami! Pilih pembicara berikutnya dari 
         contents: [
           {
             role: 'user',
-            parts: [{ text: `${systemPrompt}\n\n${promptUser}` }],
+            parts: [{ text: `${systemInstruction}\n\n${promptUser}` }],
           },
         ],
         config: {
@@ -278,41 +412,31 @@ Instruksi: Lanjutkan dialog rapat secara alami! Pilih pembicara berikutnya dari 
         },
       });
       rawJson = response.text || '';
-      if (rawJson) break;
+      if (rawJson) {
+        console.log(`[Boardroom] Agen ${speakerMeta.name} berhasil berbicara via ${model}`);
+        break;
+      }
     } catch (e: any) {
-      console.warn(`[Boardroom] Model ${model} gagal: ${e.message}. Mencoba model alternatif...`);
+      console.warn(`[Boardroom] Model ${model} gagal untuk agen ${speakerMeta.name}: ${e.message}. Mencoba model cadangan...`);
       lastError = e;
     }
   }
 
   if (!rawJson) {
-    throw lastError || new Error('Gagal menghubungi model AI untuk dialog ruang rapat.');
+    throw lastError || new Error(`Gagal memproses giliran bicara untuk agen ${speakerMeta.name}`);
   }
 
   let parsed: any = {};
   try {
     parsed = JSON.parse(rawJson);
   } catch (err) {
-    console.error('[Boardroom] Gagal parse JSON:', rawJson);
+    console.error(`[Boardroom] Gagal parse JSON untuk ${speakerMeta.name}:`, rawJson);
     parsed = {
-      speakerId: 'manager',
-      replyingToId: 'boss',
+      content: `Siap Bos Adrien dan tim, saya ${speakerMeta.name} sedang memproses data terbaru untuk memastikan seluruh target kita tercapai.`,
       type: 'report',
-      content: 'Rapat berjalan lancar, Bos Adrien. Tim sedang mereview data terbaru untuk memastikan seluruh proses optimal.',
-      suggestedNextSpeaker: 'atlas',
+      suggestedNextSpeaker: 'manager',
     };
   }
-
-  const speakerId: ParticipantId = parsed.speakerId && BOARDROOM_ROSTER[parsed.speakerId as ParticipantId]
-    ? (parsed.speakerId as ParticipantId)
-    : 'manager';
-
-  const replyingToId: ParticipantId | null = parsed.replyingToId && BOARDROOM_ROSTER[parsed.replyingToId as ParticipantId]
-    ? (parsed.replyingToId as ParticipantId)
-    : null;
-
-  const speakerMeta = BOARDROOM_ROSTER[speakerId];
-  const replyingToMeta = replyingToId ? BOARDROOM_ROSTER[replyingToId] : null;
 
   const message: BoardroomMessage = {
     id: `meet-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -320,16 +444,17 @@ Instruksi: Lanjutkan dialog rapat secara alami! Pilih pembicara berikutnya dari 
     speakerName: speakerMeta.name,
     speakerRole: speakerMeta.role,
     avatarColor: speakerMeta.avatarColor,
-    content: parsed.content || 'Siap, kita lanjutkan koordinasi ini.',
+    content: (parsed.content || '').trim() || 'Siap, koordinasi terus kita lanjutkan.',
     timestamp: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
     replyingToId,
     replyingToName: replyingToMeta ? replyingToMeta.name : null,
     type: parsed.type || 'report',
   };
 
-  const suggestedNextSpeaker: ParticipantId = parsed.suggestedNextSpeaker && BOARDROOM_ROSTER[parsed.suggestedNextSpeaker as ParticipantId]
-    ? (parsed.suggestedNextSpeaker as ParticipantId)
-    : 'lyra';
+  const suggestedNextSpeaker: ParticipantId =
+    parsed.suggestedNextSpeaker && BOARDROOM_ROSTER[parsed.suggestedNextSpeaker as ParticipantId]
+      ? (parsed.suggestedNextSpeaker as ParticipantId)
+      : 'manager';
 
   return {
     success: true,

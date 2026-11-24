@@ -185,8 +185,14 @@ export const BoardroomPage: React.FC = () => {
   const [showRosterMobile, setShowRosterMobile] = useState<boolean>(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesRef = useRef<BoardroomMessage[]>(messages);
+  messagesRef.current = messages;
+
   const isAutoPlayingRef = useRef<boolean>(isAutoPlaying);
   isAutoPlayingRef.current = isAutoPlaying;
+
+  const isProcessingRef = useRef<boolean>(isProcessing);
+  isProcessingRef.current = isProcessing;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -196,8 +202,9 @@ export const BoardroomPage: React.FC = () => {
     scrollToBottom();
   }, [messages, activeSpeaker]);
 
-  // Save to LocalStorage
+  // Save to LocalStorage & update ref
   const saveMessages = useCallback((newMsgs: BoardroomMessage[]) => {
+    messagesRef.current = newMsgs;
     setMessages(newMsgs);
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(newMsgs));
@@ -212,9 +219,13 @@ export const BoardroomPage: React.FC = () => {
       action?: 'start' | 'next' | 'boss_interrupt';
       userText?: string;
       targetSpeaker?: ParticipantId;
+      customHistory?: BoardroomMessage[];
     }) => {
-      if (isProcessing) return;
+      if (isProcessingRef.current) return;
+      isProcessingRef.current = true;
       setIsProcessing(true);
+
+      const historyToUse = params.customHistory || messagesRef.current;
 
       try {
         const res = await fetch('/api/boardroom/turn', {
@@ -222,7 +233,7 @@ export const BoardroomPage: React.FC = () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             agenda,
-            history: messages,
+            history: historyToUse,
             bossInput: params.userText,
             requestedSpeaker: params.targetSpeaker,
             action: params.action || (params.userText ? 'boss_interrupt' : 'next'),
@@ -236,9 +247,20 @@ export const BoardroomPage: React.FC = () => {
         const data = await res.json();
         if (data.success && data.message) {
           setActiveSpeaker(data.message.speakerId);
-          saveMessages([...messages, data.message]);
 
-          // Small delay for natural conversation feel
+          // Selipkan pesan baru ke state terkini tanpa pernah menimpa bubble chat Bos!
+          setMessages((prev) => {
+            const alreadyExists = prev.some((m) => m.id === data.message.id);
+            if (alreadyExists) return prev;
+            const updated = [...prev, data.message];
+            messagesRef.current = updated;
+            try {
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+            } catch {}
+            return updated;
+          });
+
+          // Animasi active speaker badge
           setTimeout(() => {
             setActiveSpeaker(null);
           }, 1200);
@@ -246,43 +268,60 @@ export const BoardroomPage: React.FC = () => {
       } catch (err: any) {
         console.error('[Boardroom Error]:', err);
         toast.error(err.message || 'Koneksi ke Ruang Rapat terganggu.');
-        setIsAutoPlaying(false);
       } finally {
+        isProcessingRef.current = false;
         setIsProcessing(false);
       }
     },
-    [agenda, messages, isProcessing, saveMessages]
+    [agenda]
   );
 
-  // Auto-play loop: AI employees discuss among themselves automatically
+  // Auto-play loop: Dialog berjalan tanpa henti antar staf AI sampai Bos menyuruh berhenti
   useEffect(() => {
-    if (!isAutoPlaying) return;
+    let timer: any = null;
 
-    const timer = setInterval(() => {
-      if (isAutoPlayingRef.current && !isProcessing) {
-        requestDialogueTurn({ action: 'next' });
+    const runLoop = async () => {
+      if (isAutoPlayingRef.current && !isProcessingRef.current) {
+        await requestDialogueTurn({ action: 'next' });
       }
-    }, 4500);
+      // Jadwalkan giliran berikutnya selama masih auto-playing
+      if (isAutoPlayingRef.current) {
+        timer = setTimeout(runLoop, 4000);
+      }
+    };
 
-    return () => clearInterval(timer);
-  }, [isAutoPlaying, isProcessing, requestDialogueTurn]);
+    if (isAutoPlaying) {
+      timer = setTimeout(runLoop, 2000);
+    }
+
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [isAutoPlaying, requestDialogueTurn]);
 
   // Start fresh meeting
   const handleStartMeeting = async () => {
     setIsAutoPlaying(false);
+    isAutoPlayingRef.current = false;
     saveMessages([]);
     toast.info('Memulai rapat baru... Moderator Manager Utama sedang membuka agenda.');
-    await requestDialogueTurn({ action: 'start' });
+    await requestDialogueTurn({ action: 'start', customHistory: [] });
     setIsAutoPlaying(true);
+    isAutoPlayingRef.current = true;
   };
 
   // Boss sends command/input
   const handleSendBossMessage = async (customText?: string) => {
     const textToSend = (customText || bossInput).trim();
-    if (!textToSend || isProcessing) return;
+    if (!textToSend || isProcessingRef.current) return;
 
-    // Immediately pause auto-discussion: Boss is speaking!
-    setIsAutoPlaying(false);
+    // Cek apakah Bos memerintahkan rapat berhenti/diam
+    const isStopCommand = /stop|berhenti|diam|tunggu|pause|tahan|cukup|nanti/i.test(textToSend);
+    if (isStopCommand) {
+      setIsAutoPlaying(false);
+      isAutoPlayingRef.current = false;
+      toast.warning('✋ Sesuai instruksi Bos, diskusi otomatis dijeda.');
+    }
 
     const bossMsg: BoardroomMessage = {
       id: `boss-${Date.now()}`,
@@ -295,18 +334,40 @@ export const BoardroomPage: React.FC = () => {
       type: 'directive',
     };
 
-    const nextList = [...messages, bossMsg];
+    // Pastikan bubble chat Bos masuk ke daftar seketika dan tersimpan permanen
+    const nextList = [...messagesRef.current, bossMsg];
     saveMessages(nextList);
     setBossInput('');
 
-    // Trigger AI response to Boss
-    await requestDialogueTurn({ action: 'boss_interrupt', userText: textToSend });
+    // Picu staf AI untuk langsung menanggapi arahan Bos
+    await requestDialogueTurn({
+      action: 'boss_interrupt',
+      userText: textToSend,
+      customHistory: nextList,
+    });
+
+    // Jika Bos TIDAK menyuruh berhenti, otomatis lanjutkan diskusi tanpa batas!
+    if (!isStopCommand) {
+      setIsAutoPlaying(true);
+      isAutoPlayingRef.current = true;
+    }
   };
 
   // Boss commands: Silence / Pause
   const handleBossSilence = () => {
     setIsAutoPlaying(false);
+    isAutoPlayingRef.current = false;
     toast.warning('✋ Rapat dijeda! Semua staf AI hening mendengarkan Bos Adrien.');
+  };
+
+  // Boss commands: Resume / Lanjutkan Diskusi
+  const handleBossResume = () => {
+    setIsAutoPlaying(true);
+    isAutoPlayingRef.current = true;
+    toast.success('▶️ Diskusi dilanjutkan! Para staf AI kembali berdiskusi.');
+    if (!isProcessingRef.current) {
+      requestDialogueTurn({ action: 'next' });
+    }
   };
 
   // Copy transcript
@@ -389,7 +450,7 @@ export const BoardroomPage: React.FC = () => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setIsAutoPlaying(true)}
+                onClick={handleBossResume}
                 className="h-8 text-xs font-medium text-emerald-700 bg-emerald-50/70 hover:bg-emerald-100 border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-300 gap-1.5"
                 title="Lanjutkan dialog otomatis antar staf AI"
               >
