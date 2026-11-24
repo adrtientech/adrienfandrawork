@@ -14,6 +14,7 @@ import { runOutreachAgent } from './agents/04-outreach.js';
 import { runSyncInboxAgent } from './agents/05-inbox-watcher.js';
 import { runFollowupAgent } from './agents/06-followup.js';
 import { runManagerChat, getStoredChatHistory, resetStoredChatHistory } from './agents/06-manager-chat.js';
+import { generateBoardroomTurn, BOARDROOM_ROSTER } from './agents/07-boardroom.js';
 import { getExcludedBrands, addExcludedBrand, removeExcludedBrand } from './excluded-brands.js';
 import { getVaultDocuments, addVaultDocument, removeVaultDocument } from './vault.js';
 import { supabaseServer } from './supabase.js';
@@ -228,6 +229,28 @@ app.post('/api/manager/chat', async (req, res) => {
     res.json({ success: true, ...result });
   } catch (err: any) {
     console.error('Error in /api/manager/chat:', err);
+    res.status(500).json({ success: false, message: err.message || 'Internal Server Error' });
+  }
+});
+
+// 8.5. Ruang Rapat Eksekutif Multi-Agen (AI Boardroom War Room)
+app.get('/api/boardroom/roster', (req, res) => {
+  res.json({ success: true, roster: BOARDROOM_ROSTER });
+});
+
+app.post('/api/boardroom/turn', async (req, res) => {
+  try {
+    const { agenda, history, bossInput, requestedSpeaker, action } = req.body || {};
+    const result = await generateBoardroomTurn({
+      agenda: agenda || 'Evaluasi Kinerja Mingguan & Strategi Dealflow',
+      history: history || [],
+      bossInput,
+      requestedSpeaker,
+      action: action || (bossInput ? 'boss_interrupt' : 'next'),
+    });
+    res.json(result);
+  } catch (err: any) {
+    console.error('Error in /api/boardroom/turn:', err);
     res.status(500).json({ success: false, message: err.message || 'Internal Server Error' });
   }
 });

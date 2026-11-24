@@ -10,7 +10,8 @@ import {
   Moon,
   RotateCcw,
   Users,
-  FolderArchive
+  FolderArchive,
+  MessagesSquare
 } from 'lucide-react';
 import { useCrm } from '@/context/crm-context';
 import { cn } from '@/lib/utils';
@@ -45,6 +46,11 @@ export const Sidebar: React.FC = () => {
       to: '/',
       icon: Compass,
       exact: true,
+    },
+    {
+      label: 'Ruang Rapat Tim',
+      to: '/boardroom',
+      icon: MessagesSquare,
     },
     {
       label: 'Struktur Tim AI',

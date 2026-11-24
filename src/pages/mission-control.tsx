@@ -26,7 +26,8 @@ import {
   SlidersHorizontal,
   Flame,
   AlertTriangle,
-  FlaskConical
+  FlaskConical,
+  Users
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -341,6 +342,18 @@ export const MissionControlPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            <Link to="/boardroom">
+              <Button
+                variant="outline"
+                size="sm"
+                title="Buka Ruang Rapat Tim & Evaluasi Lintas Jobdesk"
+                className="text-[11px] font-medium text-emerald-700 hover:text-emerald-950 bg-emerald-50/70 hover:bg-emerald-100 border-emerald-200/90 h-7 px-2.5 gap-1.5 craft-button shadow-2xs"
+              >
+                <Users className="h-3 w-3 text-emerald-600" />
+                <span>Ruang Rapat Tim</span>
+              </Button>
+            </Link>
+
             <Button
               variant="outline"
               size="sm"

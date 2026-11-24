@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { CrmProvider } from '@/context/crm-context';
 import { AppLayout } from '@/components/layout/app-layout';
 import { MissionControlPage } from '@/pages/mission-control';
+import { BoardroomPage } from '@/pages/boardroom';
 import { TeamOrgChartPage } from '@/pages/team-org-chart';
 import { PipelinePage } from '@/pages/pipeline';
 import { ActionQueuePage } from '@/pages/action-queue';
@@ -17,6 +18,7 @@ export const App: React.FC = () => {
         <Routes>
           <Route path="/" element={<AppLayout />}>
             <Route index element={<MissionControlPage />} />
+            <Route path="boardroom" element={<BoardroomPage />} />
             <Route path="team" element={<TeamOrgChartPage />} />
             <Route path="pipeline" element={<PipelinePage />} />
             <Route path="queue" element={<ActionQueuePage />} />
