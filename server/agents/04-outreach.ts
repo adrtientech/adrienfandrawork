@@ -492,15 +492,25 @@ Aturan Format & Output:
     }
   }
 
-  // Update counter emails_sent_today di settings
+  // Update counter emails_sent_today di settings & otomatis jeda global jika batas kuota tercapai
   if (isServerSupabaseConfigured() && sentList.length > 0) {
+    const newTotalSent = (settings.emails_sent_today || 0) + sentList.length;
+    const quotaReached = newTotalSent >= (settings.daily_email_limit || 5);
+
     await supabaseServer
       .from('settings')
       .update({
-        emails_sent_today: settings.emails_sent_today + sentList.length,
+        emails_sent_today: newTotalSent,
+        is_global_paused: quotaReached ? true : settings.is_global_paused,
         updated_at: new Date().toISOString(),
       })
       .eq('id', 1);
+
+    if (quotaReached) {
+      console.log(
+        `[Tahap B1-B2 - 04-outreach] 🎯 Target kuota uji coba (${settings.daily_email_limit} email) tercapai! Engine otomatis DIJEDA (is_global_paused = true) untuk keamanan reputasi domain.`
+      );
+    }
   }
 
   return {
