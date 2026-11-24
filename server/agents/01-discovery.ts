@@ -34,7 +34,56 @@ const EXCLUDED_DOMAINS = new Set([
   'quora.com',
   'coursera.org',
   'udemy.com',
+  'wordpress.com',
+  'blogspot.com',
+  'ghost.io',
+  'dev.to',
+  'hashnode.dev',
+  'notion.site',
+  'wixsite.com',
+  'weebly.com',
+  'hubspotpage.com',
 ]);
+
+/**
+ * Membersihkan nama brand dari judul hasil pencarian Google agar tidak menjadi judul artikel / listicle
+ */
+export function cleanBrandName(title: string, domain: string): string {
+  const domainParts = domain.split('.');
+  const baseDomain = domainParts[0] || domain;
+  const capitalizedBase = baseDomain.charAt(0).toUpperCase() + baseDomain.slice(1);
+
+  if (!title) return capitalizedBase;
+
+  // Pola artikel/listicle/review yang BUKAN nama brand murni
+  const isArticleOrListicle = /^\d+\s+|best\b|top\b|how\s+to|tested\b|vs\b|review\b|guide\b|survived\b|tools\b|apps\b|software\b/i.test(title);
+
+  // Jika judul dipisahkan pemisah (contoh: "Zapier: Workflow Automation" atau "10 Best Tools | DeskTime")
+  const segments = title.split(/[-–|:—•]/).map((s) => s.trim()).filter(Boolean);
+
+  // Cari segmen yang menyebutkan nama brand dasar
+  for (const seg of segments) {
+    if (
+      seg.toLowerCase().includes(baseDomain.toLowerCase()) &&
+      seg.length <= 30 &&
+      !/^\d+\s+|best\b|top\b/i.test(seg)
+    ) {
+      return seg;
+    }
+  }
+
+  // Jika judul adalah artikel/listicle dan tidak ada segmen nama brand yang cocok, gunakan nama domain yang rapi
+  if (isArticleOrListicle) {
+    return capitalizedBase;
+  }
+
+  // Jika segmen pertama pendek dan bersih (<= 35 karakter) serta bukan judul listicle
+  if (segments[0] && segments[0].length <= 35 && !/^\d+\s+|best\b|top\b|tested\b/i.test(segments[0])) {
+    return segments[0];
+  }
+
+  return capitalizedBase;
+}
 
 /**
  * Mengekstrak domain utama (root domain, contoh: wise.com) dari URL hasil pencarian
@@ -47,7 +96,6 @@ export function extractRootDomain(urlStr: string): string | null {
       .replace(/^(www|app|blog|help|support|docs|careers|get|try|go)\./, '');
 
     if (
-      EXCLUDED_DOMAINS.has(host) ||
       host.includes('google.') ||
       host.includes('.gov') ||
       host.includes('.edu') ||
@@ -55,6 +103,14 @@ export function extractRootDomain(urlStr: string): string | null {
     ) {
       return null;
     }
+
+    // Blokir domain blacklist dan semua subdomainnya (contoh: *.medium.com, *.substack.com)
+    for (const exc of EXCLUDED_DOMAINS) {
+      if (host === exc || host.endsWith(`.${exc}`)) {
+        return null;
+      }
+    }
+
     return host;
   } catch {
     return null;
@@ -140,10 +196,7 @@ export async function runDiscoverAgent(limitPerRun = 5): Promise<{
     const domain = extractRootDomain(item.link);
     if (!domain) continue;
 
-    const cleanName = (item.title || domain)
-      .split(/[-–|:—•]/)[0]
-      .trim()
-      .slice(0, 60);
+    const cleanName = cleanBrandName(item.title || '', domain);
 
     if (!candidateDomains.some((c) => c.domain === domain)) {
       candidateDomains.push({

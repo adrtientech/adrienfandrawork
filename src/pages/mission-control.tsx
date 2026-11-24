@@ -87,6 +87,7 @@ export const MissionControlPage: React.FC = () => {
   const [isThinking, setIsThinking] = useState(false);
   const [isDiscovering, setIsDiscovering] = useState(false);
   const [isCheckingInbox, setIsCheckingInbox] = useState(false);
+  const [isRunningFullPipeline, setIsRunningFullPipeline] = useState(false);
 
   // Circuit Breaker Status
   const isCircuitBreakerTriggered = (settings.bounces_today || 0) > (settings.max_daily_bounces || 2);
@@ -270,6 +271,38 @@ export const MissionControlPage: React.FC = () => {
   };
 
   // Simulation actions
+  const handleRunFullPipeline = async () => {
+    setIsRunningFullPipeline(true);
+    toast.loading('Menjalankan seluruh alur 6 Agen AI otomatis...', { id: 'run-all' });
+    try {
+      const res = await fetch('/api/agents/run-all?manual=true', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ manual: true }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success('Pipeline 6-Tahap Berhasil Dijalankan!', { id: 'run-all' });
+        await refreshData();
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `sys-${Date.now()}`,
+            sender: 'manager',
+            text: `🎯 **Eksekusi Full Pipeline Selesai!**\n\n- **Riset (Atlas):** ${data.summary?.discovery || 'Selesai'}\n- **Investigasi (Lyra):** ${data.summary?.enrichment || 'Selesai'}\n- **Bounce Shield (Aegis):** ${data.summary?.verifier || 'Selesai'}\n- **Kirim Email (Orion):** ${data.summary?.outreach || 'Selesai'}\n- **Cek Inbox (Echo):** ${data.summary?.syncInbox || 'Selesai'}`,
+            timestamp: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+          },
+        ]);
+      } else {
+        toast.error(data.message || data.error || 'Gagal menjalankan pipeline', { id: 'run-all' });
+      }
+    } catch (err: any) {
+      toast.error('Gagal menghubungi pipeline: ' + err.message, { id: 'run-all' });
+    } finally {
+      setIsRunningFullPipeline(false);
+    }
+  };
+
   const handleAiDiscovery = async () => {
     setIsDiscovering(true);
     try {
@@ -546,6 +579,16 @@ export const MissionControlPage: React.FC = () => {
             Kontrol mesin otomatisasi pipeline
           </p>
         </div>
+
+        {/* Full Pipeline Primary Trigger */}
+        <button
+          onClick={handleRunFullPipeline}
+          disabled={isRunningFullPipeline}
+          className="w-full h-9 px-3 rounded-md text-[11px] font-semibold bg-zinc-900 hover:bg-zinc-800 text-white flex items-center justify-center gap-2 shadow-2xs craft-button transition-all"
+        >
+          <PlayCircle className={`h-3.5 w-3.5 text-emerald-400 ${isRunningFullPipeline ? 'animate-spin' : ''}`} />
+          <span>{isRunningFullPipeline ? 'Menjalankan Pipeline...' : '▶️ Jalankan Full Pipeline (Semua AI)'}</span>
+        </button>
 
         {/* Quick Action Buttons */}
         <div className="grid grid-cols-2 gap-1.5">

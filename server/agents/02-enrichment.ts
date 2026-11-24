@@ -1,5 +1,6 @@
 import { supabaseServer, isServerSupabaseConfigured } from '../supabase.js';
 import { isBrandExcluded } from '../excluded-brands.js';
+import { cleanBrandName } from './01-discovery.js';
 import { GoogleGenAI } from '@google/genai';
 import dotenv from 'dotenv';
 
@@ -186,6 +187,9 @@ ${partnerSnippets || 'Tidak ditemukan halaman creator/partner'}
 ${fundingSnippets || 'Tidak ditemukan berita pendanaan terbaru'}
 
 === INSTRUKSI KLASIFIKASI WAJIB ===
+0. Nama Resmi Brand/Perusahaan (company_name):
+   - Tentukan nama resmi brand yang bersih (contoh: "Zapier", "DeskTime", "Gumloop", "Teamwork", "Webex", "Efficient App").
+   - DILARANG KERAS menggunakan judul artikel listicle (contoh: "10 Best Tools", "I Tested 50+ Apps") atau slogan panjang!
 1. Evaluasi Aksesibilitas Pasar Indonesia (is_indonesia_accessible):
    - Apakah produk atau aplikasi ini masuk akal dan dapat diakses/digunakan oleh masyarakat di Indonesia? (Contoh produk TIDAK aksesibel: asuransi kesehatan khusus warga negara AS, layanan pengiriman makanan lokal Jerman, bank lokal UK yang butuh SSN).
    - Set true jika SaaS, tools AI, platform produktivitas, dev tool, atau fintech global yang bisa diakses dari Indonesia. Set false jika khusus lokal negara barat saja.
@@ -208,58 +212,75 @@ ${fundingSnippets || 'Tidak ditemukan berita pendanaan terbaru'}
    - Berikan 1 kalimat alasan kecocokan (ai_fit_reason).
 `;
 
-    try {
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: prompt,
-        config: {
-          responseMimeType: 'application/json',
-          responseSchema: {
-            type: 'OBJECT' as any,
-            properties: {
-              country: { type: 'STRING' as any },
-              timezone: { type: 'STRING' as any },
-              company_scale: { type: 'STRING' as any, enum: ['startup', 'mid_market', 'enterprise'] },
-              employee_count_est: { type: 'STRING' as any },
-              niche_category: { type: 'STRING' as any },
-              product_summary: { type: 'STRING' as any },
-              has_partner_program: { type: 'BOOLEAN' as any },
-              is_indonesia_accessible: { type: 'BOOLEAN' as any },
-              buying_intent_signals: {
-                type: 'ARRAY' as any,
-                items: { type: 'STRING' as any },
-              },
-              ai_fit_score: { type: 'INTEGER' as any },
-              ai_fit_reason: { type: 'STRING' as any },
-              suggested_content_ideas: {
-                type: 'ARRAY' as any,
-                items: { type: 'STRING' as any },
-              },
-              primary_pic_name: { type: 'STRING' as any },
-              primary_pic_role: { type: 'STRING' as any },
-              company_instagram_url: { type: 'STRING' as any },
-              company_linkedin_url: { type: 'STRING' as any },
-              founder_name: { type: 'STRING' as any },
-              founder_instagram_url: { type: 'STRING' as any },
-              founder_linkedin_url: { type: 'STRING' as any },
-            },
-            required: [
-              'country',
-              'timezone',
-              'company_scale',
-              'product_summary',
-              'is_indonesia_accessible',
-              'has_partner_program',
-              'buying_intent_signals',
-              'ai_fit_score',
-              'ai_fit_reason',
-              'suggested_content_ideas',
-            ],
-          },
-        },
-      });
+    let responseText = '';
+    const candidateModels = [
+      'gemini-2.5-flash',
+      'gemini-3.5-flash',
+      'gemini-3.5-flash-lite',
+    ];
 
-      const extracted = JSON.parse(response.text || '{}');
+    for (const model of candidateModels) {
+      try {
+        const response = await ai.models.generateContent({
+          model,
+          contents: prompt,
+          config: {
+            responseMimeType: 'application/json',
+            responseSchema: {
+              type: 'OBJECT' as any,
+              properties: {
+                company_name: { type: 'STRING' as any },
+                country: { type: 'STRING' as any },
+                timezone: { type: 'STRING' as any },
+                company_scale: { type: 'STRING' as any, enum: ['startup', 'mid_market', 'enterprise'] },
+                employee_count_est: { type: 'STRING' as any },
+                niche_category: { type: 'STRING' as any },
+                product_summary: { type: 'STRING' as any },
+                has_partner_program: { type: 'BOOLEAN' as any },
+                is_indonesia_accessible: { type: 'BOOLEAN' as any },
+                buying_intent_signals: {
+                  type: 'ARRAY' as any,
+                  items: { type: 'STRING' as any },
+                },
+                ai_fit_score: { type: 'INTEGER' as any },
+                ai_fit_reason: { type: 'STRING' as any },
+                suggested_content_ideas: {
+                  type: 'ARRAY' as any,
+                  items: { type: 'STRING' as any },
+                },
+                primary_pic_name: { type: 'STRING' as any },
+                primary_pic_role: { type: 'STRING' as any },
+                company_instagram_url: { type: 'STRING' as any },
+                company_linkedin_url: { type: 'STRING' as any },
+                founder_name: { type: 'STRING' as any },
+                founder_instagram_url: { type: 'STRING' as any },
+                founder_linkedin_url: { type: 'STRING' as any },
+              },
+              required: [
+                'country',
+                'timezone',
+                'company_scale',
+                'product_summary',
+                'is_indonesia_accessible',
+                'has_partner_program',
+                'buying_intent_signals',
+                'ai_fit_score',
+                'ai_fit_reason',
+                'suggested_content_ideas',
+              ],
+            },
+          },
+        });
+        responseText = response.text || '';
+        if (responseText) break;
+      } catch (err: any) {
+        console.warn(`[Tahap A2-A3 - 02-enrichment] Model ${model} gagal untuk ${brand.company_name}: ${err.message}. Mencoba model cadangan...`);
+      }
+    }
+
+    try {
+      if (!responseText) throw new Error('Seluruh model Gemini gagal menganalisis brand.');
+      const extracted = JSON.parse(responseText);
       const isIndoAccessible = extracted.is_indonesia_accessible !== false;
       const hasPartnerProg = Boolean(extracted.has_partner_program || hasPartnerSnippet);
       const buyingSignals: string[] = Array.isArray(extracted.buying_intent_signals) ? extracted.buying_intent_signals : [];
@@ -270,15 +291,25 @@ ${fundingSnippets || 'Tidak ditemukan berita pendanaan terbaru'}
       let rawScore = Math.max(1, Math.min(100, Number(extracted.ai_fit_score) || 65));
 
       // WAVE 1 LOGIC:
-      // 1. Jika produk TIDAK aksesibel di Indonesia -> otomatis fit_score <= 30 & status skipped
+      // 1. Cek apakah website ini ternyata hanyalah blog pribadi/artikel/agregator
+      const isBlogOrArticle =
+        /personal blog|medium\.com|blogspot|wordpress|just an article|roundup of tools|affiliate directory/i.test(
+          extracted.product_summary || ''
+        ) ||
+        /medium\.com|substack\.com/i.test(brand.domain);
+
+      // 2. Jika produk TIDAK aksesibel di Indonesia atau sekadar artikel blog -> otomatis fit_score <= 30 & status skipped
       let finalScore = rawScore;
       let fitReason = extracted.ai_fit_reason || 'Produk relevan untuk pasar digital Indonesia.';
 
-      if (!isIndoAccessible) {
+      if (isBlogOrArticle) {
+        finalScore = 20;
+        fitReason = 'Domain ini berupa artikel blog / agregator konten, bukan entitas SaaS atau brand asli.';
+      } else if (!isIndoAccessible) {
         finalScore = Math.min(30, rawScore);
         fitReason = 'Produk tidak dapat diakses atau tidak relevan bagi audiens Indonesia (Khusus pasar lokal barat).';
       } else {
-        // 2. Bonus +20 poin (maks 100) jika ada partner program atau sinyal funding/ekspansi APAC
+        // 3. Bonus +20 poin (maks 100) jika ada partner program atau sinyal funding/ekspansi APAC
         const hasHighIntentBonus = hasPartnerProg || buyingSignals.some(s => /funding|series|expansion|southeast asia|indonesia|apac/i.test(s));
         if (hasHighIntentBonus) {
           finalScore = Math.min(100, finalScore + 20);
@@ -287,7 +318,7 @@ ${fundingSnippets || 'Tidak ditemukan berita pendanaan terbaru'}
       }
 
       // PENGAMAN TEKNIS: AI Lead Scoring Filter (Skor < 50 atau < minFitScore otomatis Tidak Cocok / Skip)
-      const isLowFit = !isIndoAccessible || finalScore < 50 || finalScore < minFitScore;
+      const isLowFit = !isIndoAccessible || isBlogOrArticle || finalScore < 50 || finalScore < minFitScore;
       const nextStatus = isLowFit ? 'skipped' : 'enriched';
 
       if (isLowFit) {
@@ -301,7 +332,17 @@ ${fundingSnippets || 'Tidak ditemukan berita pendanaan terbaru'}
       const defaultEmpEst =
         scale === 'startup' ? '<15 karyawan' : scale === 'mid_market' ? '15-200 karyawan' : '>200 karyawan';
 
+      // Ekstraksi nama brand resmi yang bersih
+      const rawExtractedName = (extracted.company_name || '').trim();
+      const cleanCompName =
+        rawExtractedName &&
+        rawExtractedName.length <= 40 &&
+        !/^\d+\s+|best\b|top\b|tested\b/i.test(rawExtractedName)
+          ? rawExtractedName
+          : cleanBrandName(brand.company_name || '', brand.domain);
+
       const updates = {
+        company_name: cleanCompName,
         country: extracted.country || brand.country || 'United States',
         timezone: extracted.timezone || 'UTC',
         company_scale: scale,
@@ -310,9 +351,6 @@ ${fundingSnippets || 'Tidak ditemukan berita pendanaan terbaru'}
         product_summary: extracted.product_summary || brand.product_summary,
         ai_fit_score: finalScore,
         ai_fit_reason: fitReason,
-        has_partner_program: hasPartnerProg,
-        is_indonesia_accessible: isIndoAccessible,
-        buying_intent_signals: buyingSignals,
         suggested_content_ideas: extracted.suggested_content_ideas || [],
         primary_pic_name: extracted.primary_pic_name || extracted.founder_name || brand.primary_pic_name,
         primary_pic_role:
@@ -329,7 +367,12 @@ ${fundingSnippets || 'Tidak ditemukan berita pendanaan terbaru'}
       };
 
       if (isServerSupabaseConfigured()) {
-        await supabaseServer.from('brands').update(updates).eq('id', brand.id);
+        const { error: updateErr } = await supabaseServer.from('brands').update(updates).eq('id', brand.id);
+        if (updateErr) {
+          console.error(`[Tahap A2-A3 - 02-enrichment] Gagal update Supabase untuk ${brand.company_name}:`, updateErr.message);
+        } else {
+          console.log(`[Tahap A2-A3 - 02-enrichment] ✅ ${brand.company_name} berhasil di-enrich! Status: ${nextStatus}, Skor: ${finalScore}`);
+        }
       }
 
       updatedResults.push({ id: brand.id, company_name: brand.company_name, ...updates });

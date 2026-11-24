@@ -145,7 +145,11 @@ export function evaluateTimezoneSendingWindow(
  */
 export async function runOutreachAgent(
   maxToSend = 3,
-  options: { strictTimezoneWindow?: boolean } = {}
+  options: {
+    strictTimezoneWindow?: boolean;
+    enforceBusinessHours?: boolean;
+    fastJitter?: boolean;
+  } = {}
 ): Promise<{
   success: boolean;
   sentCount: number;
@@ -307,7 +311,12 @@ export async function runOutreachAgent(
     }
 
     // WAVE 1: Deliverability Guard (Selasa - Kamis, 08:30 - 11:30 Pagi Waktu Lokal)
-    if (settings.enforce_business_hours !== false && !isSafeTestMode) {
+    const shouldEnforceHours =
+      options.enforceBusinessHours !== undefined
+        ? options.enforceBusinessHours
+        : settings.enforce_business_hours !== false && !isSafeTestMode;
+
+    if (shouldEnforceHours) {
       const strictHours = evaluateStrictBusinessHours(brand.timezone);
       if (!strictHours.isBusinessHours) {
         deferredTimezoneCount++;
@@ -318,9 +327,12 @@ export async function runOutreachAgent(
       }
     }
 
-    // WAVE 1: Human Jitter (3 - 7 menit antar email di production mode, 2 detik di test mode)
+    // WAVE 1: Human Jitter (3 - 7 menit antar email di production mode, 3 detik di test / fast mode)
     if (sentList.length > 0) {
-      const jitterMs = isSafeTestMode ? 2000 : Math.floor(Math.random() * (420000 - 180000 + 1)) + 180000;
+      const jitterMs =
+        isSafeTestMode || options.fastJitter
+          ? 3000
+          : Math.floor(Math.random() * (420000 - 180000 + 1)) + 180000;
       console.log(`[Tahap B1-B2 - Human Jitter] Menunggu ${Math.round(jitterMs / 1000)} detik sebelum memproses email berikutnya...`);
       await sleep(jitterMs);
     }
@@ -395,24 +407,40 @@ Aturan Format & Output:
 2. "body_text": Isi email dipisahkan dengan baris kosong (\\n\\n).
 `;
 
-    try {
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: prompt,
-        config: {
-          responseMimeType: 'application/json',
-          responseSchema: {
-            type: 'OBJECT' as any,
-            properties: {
-              subject: { type: 'STRING' as any },
-              body_text: { type: 'STRING' as any },
-            },
-            required: ['subject', 'body_text'],
-          },
-        },
-      });
+    let responseText = '';
+    const candidateModels = [
+      'gemini-2.5-flash',
+      'gemini-3.5-flash',
+      'gemini-3.5-flash-lite',
+    ];
 
-      const emailDraft = JSON.parse(response.text || '{}');
+    for (const model of candidateModels) {
+      try {
+        const response = await ai.models.generateContent({
+          model,
+          contents: prompt,
+          config: {
+            responseMimeType: 'application/json',
+            responseSchema: {
+              type: 'OBJECT' as any,
+              properties: {
+                subject: { type: 'STRING' as any },
+                body_text: { type: 'STRING' as any },
+              },
+              required: ['subject', 'body_text'],
+            },
+          },
+        });
+        responseText = response.text || '';
+        if (responseText) break;
+      } catch (err: any) {
+        console.warn(`[Tahap B1-B2 - 04-outreach] Model ${model} gagal untuk ${brand.company_name}: ${err.message}. Mencoba model cadangan...`);
+      }
+    }
+
+    try {
+      if (!responseText) throw new Error('Seluruh model Gemini gagal menyusun email.');
+      const emailDraft = JSON.parse(responseText || '{}');
       const realRecipient = brand.primary_email;
       const actualRecipient = isSafeTestMode ? testRecipient : realRecipient;
       const actualSubject = isSafeTestMode

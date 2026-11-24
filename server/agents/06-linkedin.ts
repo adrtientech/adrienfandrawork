@@ -132,10 +132,9 @@ Format Keluaran WAJIB berupa JSON murni:
   const ai = new GoogleGenAI({ apiKey: geminiKey, apiVersion: 'v1beta' });
 
   const candidateModels = [
+    'gemini-2.5-flash',
     'gemini-3.5-flash',
     'gemini-3.5-flash-lite',
-    'gemini-2.5-flash-lite',
-    'gemini-3.8-flash',
   ];
 
   let rawJson = '';

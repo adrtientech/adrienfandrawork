@@ -32,15 +32,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   console.log(`[Vercel Cron 24/7] Menjalankan Pipeline Otomasi: ${new Date().toISOString()}`);
 
   try {
-    // Jalankan pipeline bertahap
+    const isManualTrigger = req.query?.manual === 'true' || req.body?.manual === true;
+
+    // Jalankan pipeline bertahap untuk hingga 5 brand
     const syncInbox = await runSyncInboxAgent();
     const followup = await runFollowupAgent();
-    const discovery = await runDiscoverAgent(3);
-    const enrichment = await runEnrichAgent(3);
-    const verifier = await runVerifierAgent(3);
+    const discovery = await runDiscoverAgent(5);
+    const enrichment = await runEnrichAgent(5);
+    const verifier = await runVerifierAgent(5);
     
-    // SAFE MODE: Outreach hanya di-draft atau dikirim ke akun uji coba
-    const outreach = await runOutreachAgent(2, { strictTimezoneWindow: true });
+    // Outreach live: jika manual trigger gunakan fastJitter & bypass jam lokal agar tidak timeout di serverless
+    const outreach = await runOutreachAgent(5, {
+      strictTimezoneWindow: !isManualTrigger,
+      enforceBusinessHours: !isManualTrigger,
+      fastJitter: isManualTrigger,
+    });
 
     return res.status(200).json({
       success: true,

@@ -206,26 +206,41 @@ Instruksi Ekstraksi:
 3. Cari juga alamat email cadangan / PIC ke-2 di perusahaan yang sama jika ada (alternate_email, misal hello@${brand.domain} atau creator@${brand.domain}).
 `;
 
-    try {
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: prompt,
-        config: {
-          responseMimeType: 'application/json',
-          responseSchema: {
-            type: 'OBJECT' as any,
-            properties: {
-              primary_email: { type: 'STRING' as any },
-              alternate_email: { type: 'STRING' as any },
-              marketing_phone: { type: 'STRING' as any },
-              primary_pic_name: { type: 'STRING' as any },
-              primary_pic_role: { type: 'STRING' as any },
+    let responseText = '';
+    const candidateModels = [
+      'gemini-2.5-flash',
+      'gemini-3.5-flash',
+      'gemini-3.5-flash-lite',
+    ];
+
+    for (const model of candidateModels) {
+      try {
+        const response = await ai.models.generateContent({
+          model,
+          contents: prompt,
+          config: {
+            responseMimeType: 'application/json',
+            responseSchema: {
+              type: 'OBJECT' as any,
+              properties: {
+                primary_email: { type: 'STRING' as any },
+                alternate_email: { type: 'STRING' as any },
+                marketing_phone: { type: 'STRING' as any },
+                primary_pic_name: { type: 'STRING' as any },
+                primary_pic_role: { type: 'STRING' as any },
+              },
             },
           },
-        },
-      });
+        });
+        responseText = response.text || '';
+        if (responseText) break;
+      } catch (err: any) {
+        console.warn(`[Tahap A4 - 03-verifier] Model ${model} gagal untuk ${brand.company_name}: ${err.message}. Mencoba model cadangan...`);
+      }
+    }
 
-      const extracted = JSON.parse(response.text || '{}');
+    try {
+      const extracted = JSON.parse(responseText || '{}');
 
       const rawPhone = (extracted.marketing_phone || brand.marketing_phone || '').trim();
       const hasValidPhone = rawPhone.length >= 8 && /\d{6,}/.test(rawPhone);
