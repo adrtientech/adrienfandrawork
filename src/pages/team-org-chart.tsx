@@ -451,20 +451,21 @@ export const TeamOrgChartPage: React.FC = () => {
       scriptName: '06-followup.ts',
       cronSchedule: 'H+4 • H+9 • H+14',
       name: 'Nova',
-      codename: 'Cadence & Fallback Router',
-      role: 'Pengingat Halus & Fallback DM Founder',
-      division: 'Tahap C1–C2 • Follow-Up',
+      codename: 'Cadence & LinkedIn Social Selling Specialist',
+      role: 'Follow-Up & LinkedIn Outreach Specialist',
+      division: 'Tahap C1–C2 • Follow-Up & Social Selling',
       avatarColor: 'bg-zinc-900 text-zinc-100 border border-zinc-800',
       badgeColor: 'bg-zinc-100 text-zinc-800 border-zinc-200',
       icon: Clock,
       status: 'active',
-      statusText: 'H+4 / H+9 / H+14',
-      safeguardTag: 'Jalur Alternatif: PIC 2 vs DM Founder',
-      simpleDescription: 'Kirim email pengingat di Hari ke-4 & ke-9. Jika tetap hening di Hari ke-14, dialihkan ke jalur DM Founder di Instagram/LinkedIn.',
+      statusText: 'H+4 / H+9 / H+14 / LinkedIn',
+      safeguardTag: 'Jalur Alternatif: PIC 2 vs LinkedIn Social Selling',
+      simpleDescription: 'Email pengingat H+4/H+9, generator Connection Request Note (≤300 kar) & InMail Social Selling Pitch LinkedIn untuk founder/decision maker, serta jalur alternatif H+14.',
       responsibilities: [
         'Follow-Up 1 (Hari ke-4): Mengirim pengingat singkat 3–4 kalimat di thread email yang sama.',
         'Follow-Up 2 / Value Drop (Hari ke-9): Mengirim 1x email terakhir berisi bocoran ide konten tanpa paksaan.',
-        'Hari ke-14 (Tetap Hening): Berhenti kirim email. Brand Besar dialihkan ke email PIC ke-2; Brand Startup dialihkan ke "Pindah ke DM Founder" (disiapkan draf 2 kalimat + link IG/LinkedIn).'
+        'Hari ke-14 (Tetap Hening): Berhenti kirim email. Brand Besar dialihkan ke email PIC ke-2; Brand Startup dialihkan ke "Pindah ke DM Founder".',
+        'LinkedIn Social Selling: Menyusun Connection Request Note (≤300 karakter) & InMail Pitch untuk langsung menjangkau Founder di LinkedIn.'
       ],
       technicalSpecs: [
         'File: server/agents/06-followup.ts',

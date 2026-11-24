@@ -450,6 +450,66 @@ export class BrandService {
   }
 
   /**
+   * Panggil Agen Nova: Generate LinkedIn Social Selling Pitch & Connection Note
+   */
+  static async generateLinkedInPitch(payload: {
+    brandId?: string;
+    companyName: string;
+    domain?: string;
+    productSummary?: string;
+    founderName?: string;
+    primaryPicName?: string;
+    primaryPicRole?: string;
+    founderLinkedinUrl?: string;
+    companyLinkedinUrl?: string;
+    nicheCategory?: string;
+    country?: string;
+    customAngle?: string;
+  }): Promise<{
+    connectionNote: string;
+    connectionNoteCharCount: number;
+    inmailPitch: string;
+    followupNote: string;
+    targetName: string;
+    targetRole: string;
+    targetLinkedinUrl: string;
+    suggestedAngle: string;
+  }> {
+    try {
+      const res = await fetch('/api/agents/linkedin-pitch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.data) {
+          return json.data;
+        }
+      }
+    } catch (e) {
+      console.warn('[BrandService] Backend /api/agents/linkedin-pitch gagal, beralih ke draf fallback cerdas:', e);
+    }
+
+    // Fallback cerdas jika offline / serverless delay
+    const target = payload.founderName || payload.primaryPicName || 'Founder';
+    const note = `Hi ${target}! Huge fan of what you're building with ${payload.companyName}. Following from Indonesia where I create tech & dev education for 180k+ engineers. Would love to connect and share a few ideas on your SEA reach!`;
+    const pitch = `Hi ${target},\n\nReally impressed by ${payload.companyName} and how it streamlines workflows. Following your growth closely from Indonesia.\n\nI run a 180k+ tech & software engineering community here, educating developers and productivity-focused professionals. We're putting together a deep-dive breakdown on modern tools and would love to showcase ${payload.companyName}.\n\nHappy to share our 1-page demographic kit or a quick concept if SEA creator partnerships are on your radar this quarter!`;
+
+    return {
+      connectionNote: note,
+      connectionNoteCharCount: note.length,
+      inmailPitch: pitch,
+      followupNote: `Hi ${target}, bumping this gently! Would love to share a quick 1-page audience breakdown for ${payload.companyName} whenever you have a moment.`,
+      targetName: target,
+      targetRole: payload.primaryPicRole || 'Founder / CEO',
+      targetLinkedinUrl: payload.founderLinkedinUrl || payload.companyLinkedinUrl || 'https://linkedin.com',
+      suggestedAngle: 'Productivity & developer workflow tutorial tailored for Indonesian tech talent.',
+    };
+  }
+
+  /**
    * Reset / Bersihkan data brands (Clean Slate)
    */
   static async resetToDefaults(): Promise<void> {

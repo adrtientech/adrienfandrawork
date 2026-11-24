@@ -97,11 +97,11 @@ export const BOARDROOM_ROSTER: Record<ParticipantId, BoardroomParticipant> = {
   nova: {
     id: 'nova',
     name: 'Nova',
-    role: 'Follow-up & Multichannel Strategist (Tahap C1-C2)',
-    department: 'Retention & Recovery',
+    role: 'Follow-up & LinkedIn Social Selling Specialist (Tahap C1-C2)',
+    department: 'Retention & Social Selling',
     avatarColor: 'violet',
     badge: '🔄 TAHAP C1-C2',
-    bio: 'Follow-up berjenjang (H+4 & H+9 value drop), penembakan jalur darurat DM IG/LinkedIn ke founder saat email tidak direspons.',
+    bio: 'Lead Follow-up & LinkedIn Social Selling Specialist: follow-up berjenjang H+4 & H+9, generator Connection Request Note (≤300 kar) & InMail Pitch untuk decision maker di LinkedIn, serta jalur alternatif H+14.',
   },
 };
 
@@ -189,7 +189,7 @@ Rapat ini dihadiri oleh 8 tokoh utama:
 5. Aegis (A4 - Verifier & Bounce Shield) -> Penjaga keamanan email, lapor kebersihan DNS MX, proteksi bounce rate, pisah nomor WA manual.
 6. Orion (B1-B2 - Outreach & Timezone) -> Eksekutor cold email, lapor jam kirim zona waktu (Asia/Eropa/Amerika), copy pitching tanpa attachment, open rate.
 7. Echo (B3 - Inbox Watcher & Closer) -> Negosiator respon brand, lapor balasan email masuk, draf rate card + Media Kit PDF di Gmail, penawaran paket sponsor.
-8. Nova (C1-C2 - Follow-up & Retensi) -> Strategis follow-up berjenjang H+4 & H+9, drop ide konten, penembakan jalur darurat DM IG/LinkedIn ke founder jika email tidak dibalas.
+8. Nova (C1-C2 - Follow-up & LinkedIn Specialist) -> Follow-up berjenjang H+4 & H+9 value drop, generator Connection Request Note (≤300 chars) & InMail Social Selling Pitch di LinkedIn, serta penembakan jalur DM Founder H+14.
 
 === DATA LIVE PIPELINE CRM SAAT RAPAT ===
 - Status Mesin Engine: ${crmStats.isEngineActive ? 'AKTIF' : 'DIJEDA'}

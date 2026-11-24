@@ -16,8 +16,13 @@ import {
   Clock,
   DollarSign,
   FileText,
-  FilterX
+  FilterX,
+  Sparkles,
+  Loader2,
+  Share2,
+  Copy
 } from 'lucide-react';
+import { BrandService } from '@/lib/brand-service';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -91,6 +96,61 @@ export const PipelinePage: React.FC = () => {
       setSheetDealValue(activeBrand.deal_value_usd != null ? String(activeBrand.deal_value_usd) : '');
     }
   }, [activeBrand]);
+
+  // LinkedIn Outreach state inside Sheet Detail
+  const [linkedinDetailFormat, setLinkedinDetailFormat] = useState<'connection_note' | 'inmail_pitch'>('connection_note');
+  const [linkedinDetailDrafts, setLinkedinDetailDrafts] = useState<Record<string, { connectionNote?: string; inmailPitch?: string }>>({});
+  const [isGeneratingDetailLinkedIn, setIsGeneratingDetailLinkedIn] = useState(false);
+
+  const handleGenerateDetailLinkedIn = async () => {
+    if (!activeBrand) return;
+    setIsGeneratingDetailLinkedIn(true);
+    try {
+      const res = await BrandService.generateLinkedInPitch({
+        brandId: activeBrand.id,
+        companyName: activeBrand.company_name,
+        domain: activeBrand.domain,
+        productSummary: activeBrand.product_summary || undefined,
+        founderName: activeBrand.founder_name || undefined,
+        primaryPicName: activeBrand.primary_pic_name || undefined,
+        primaryPicRole: activeBrand.primary_pic_role || undefined,
+        founderLinkedinUrl: activeBrand.founder_linkedin_url || undefined,
+        companyLinkedinUrl: activeBrand.company_linkedin_url || undefined,
+        nicheCategory: activeBrand.niche_category || undefined,
+        country: activeBrand.country || undefined,
+      });
+
+      setLinkedinDetailDrafts((prev) => ({
+        ...prev,
+        [activeBrand.id]: {
+          connectionNote: res.connectionNote,
+          inmailPitch: res.inmailPitch,
+        },
+      }));
+      toast.success(`Draf LinkedIn untuk ${activeBrand.company_name} berhasil dibuat oleh Nova!`);
+    } catch (e: any) {
+      toast.error('Gagal membuat draf LinkedIn: ' + (e?.message || 'Error'));
+    } finally {
+      setIsGeneratingDetailLinkedIn(false);
+    }
+  };
+
+  const handleOpenAndCopyDetailLinkedIn = (textToCopy: string, targetUrl: string) => {
+    navigator.clipboard.writeText(textToCopy);
+    toast.success('Pesan LinkedIn disalin ke clipboard! Membuka profil LinkedIn...');
+    window.open(targetUrl || 'https://linkedin.com', '_blank');
+  };
+
+  const handleMarkDetailLinkedInSent = async () => {
+    if (!activeBrand) return;
+    await updateBrand(activeBrand.id, {
+      pipeline_status: 'in_progress',
+      outreach_channel: 'dm_founder',
+      last_contacted_at: new Date().toISOString(),
+      notes: `${activeBrand.notes ? activeBrand.notes + ' | ' : ''}[LINKEDIN OUTREACH] Terhubung via LinkedIn (${new Date().toLocaleDateString('id-ID')}).`,
+    });
+    toast.success(`Outreach LinkedIn untuk ${activeBrand.company_name} ditandai aktif!`);
+  };
 
   // Unique lists for dropdowns
   const uniqueCountries = useMemo(() => {
@@ -836,6 +896,145 @@ export const PipelinePage: React.FC = () => {
                   </div>
                 )}
               </div>
+
+              {/* Seksi LinkedIn Social Selling Hub (Nova AI) */}
+              {(activeBrand.founder_linkedin_url || activeBrand.company_linkedin_url) && (() => {
+                const targetUrl = activeBrand.founder_linkedin_url || activeBrand.company_linkedin_url || 'https://linkedin.com';
+                const targetName = activeBrand.founder_name || activeBrand.primary_pic_name || 'Founder';
+                const savedDraft = linkedinDetailDrafts[activeBrand.id];
+                const fallbackNote = `Hi ${targetName}! Huge fan of what you're building with ${activeBrand.company_name}. Following from Indonesia where I create tech & dev education for 180k+ engineers. Would love to connect and share a few ideas on your SEA reach!`;
+                const fallbackPitch = activeBrand.dm_fallback_message || `Hi ${targetName},\n\nReally impressed by ${activeBrand.company_name} and how it streamlines workflows. Following your growth closely from Indonesia.\n\nI run a 180k+ tech & software engineering community here, educating developers and productivity-focused professionals. We're putting together a deep-dive breakdown on modern tools and would love to showcase ${activeBrand.company_name}.\n\nHappy to share our 1-page demographic kit or a quick concept if SEA creator partnerships are on your radar this quarter!`;
+
+                const activeText =
+                  linkedinDetailFormat === 'connection_note'
+                    ? savedDraft?.connectionNote || fallbackNote
+                    : savedDraft?.inmailPitch || fallbackPitch;
+
+                const charCount = activeText.length;
+                const isConnectionNote = linkedinDetailFormat === 'connection_note';
+
+                return (
+                  <div className="space-y-3 p-4 rounded-xl border border-blue-500/30 bg-blue-500/5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="h-6 w-6 rounded bg-blue-500/20 text-blue-500 flex items-center justify-center">
+                          <Linkedin className="h-3.5 w-3.5" />
+                        </div>
+                        <div>
+                          <span className="text-xs font-bold text-foreground">Nova AI • LinkedIn Social Selling Hub</span>
+                          <p className="text-[10px] text-muted-foreground">
+                            Target: {targetName} ({activeBrand.founder_linkedin_url ? 'Profil Founder' : 'Company Page'})
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          disabled={isGeneratingDetailLinkedIn}
+                          onClick={handleGenerateDetailLinkedIn}
+                          className="h-7 text-[11px] gap-1 text-blue-500 hover:text-blue-600 hover:bg-blue-500/10"
+                        >
+                          {isGeneratingDetailLinkedIn ? (
+                            <>
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                              <span>Menyusun...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="h-3 w-3" />
+                              <span>Buat Ulang</span>
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Switcher & Char Count */}
+                    <div className="flex items-center justify-between pt-1">
+                      <div className="inline-flex p-0.5 rounded-lg bg-background border border-border/70">
+                        <button
+                          type="button"
+                          onClick={() => setLinkedinDetailFormat('connection_note')}
+                          className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors ${
+                            isConnectionNote
+                              ? 'bg-blue-600 text-white shadow-xs'
+                              : 'text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          🔗 Connection Note
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setLinkedinDetailFormat('inmail_pitch')}
+                          className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors ${
+                            !isConnectionNote
+                              ? 'bg-blue-600 text-white shadow-xs'
+                              : 'text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          💬 InMail / DM Pitch
+                        </button>
+                      </div>
+
+                      {isConnectionNote && (
+                        <span
+                          className={`font-mono text-[10px] font-semibold px-1.5 py-0.5 rounded border ${
+                            charCount <= 290
+                              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                              : charCount <= 300
+                              ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+                              : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
+                          }`}
+                        >
+                          {charCount}/300 kar
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Text Box */}
+                    <div className="relative group">
+                      <div className="p-3 rounded-lg bg-background/90 border border-border/80 text-foreground text-xs font-mono leading-relaxed select-all min-h-[68px] whitespace-pre-wrap">
+                        {activeText}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(activeText);
+                          toast.success('Pesan disalin ke clipboard!');
+                        }}
+                        className="absolute top-2 right-2 p-1.5 rounded-md bg-muted/80 hover:bg-muted border border-border/80 text-muted-foreground hover:text-foreground opacity-80 group-hover:opacity-100 transition-opacity"
+                        title="Salin teks"
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center justify-between gap-2 pt-1">
+                      <Button
+                        size="sm"
+                        onClick={() => handleOpenAndCopyDetailLinkedIn(activeText, targetUrl)}
+                        className="h-7 text-[11px] gap-1.5 bg-blue-600 hover:bg-blue-500 text-white font-medium"
+                      >
+                        <Share2 className="h-3 w-3" />
+                        <span>Buka LinkedIn &amp; Salin</span>
+                      </Button>
+
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleMarkDetailLinkedInSent}
+                        className="h-7 text-[11px] gap-1"
+                      >
+                        <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                        <span>Tandai Terhubung</span>
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Seksi Riwayat Email & Catatan */}
               <div className="space-y-4 p-4 rounded-xl border border-border bg-card/60">

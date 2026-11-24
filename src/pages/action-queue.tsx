@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useCrm } from '@/context/crm-context';
 import { Brand } from '@/types/brand';
+import { BrandService } from '@/lib/brand-service';
 import {
   Inbox,
   Mail,
@@ -16,7 +17,10 @@ import {
   Lightbulb,
   DollarSign,
   Send,
-  AlertCircle
+  AlertCircle,
+  Sparkles,
+  Loader2,
+  Share2
 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
@@ -35,10 +39,20 @@ import {
 import { toast } from 'sonner';
 
 export const ActionQueuePage: React.FC = () => {
-  const { replyQueue, manualPhoneQueue, fallbackDmQueue, updateBrand } = useCrm();
+  const { replyQueue, manualPhoneQueue, fallbackDmQueue, brands, updateBrand } = useCrm();
 
   // State for editable AI drafts in Tab 1
   const [draftEdits, setDraftEdits] = useState<Record<string, string>>({});
+
+  // State for LinkedIn Outreach (Tab 3)
+  const [linkedinTabFilter, setLinkedinTabFilter] = useState<'fallback' | 'all'>('fallback');
+  const [linkedinFormat, setLinkedinFormat] = useState<Record<string, 'connection_note' | 'inmail_pitch'>>({});
+  const [linkedinDrafts, setLinkedinDrafts] = useState<Record<string, { connectionNote?: string; inmailPitch?: string }>>({});
+  const [isGeneratingLinkedIn, setIsGeneratingLinkedIn] = useState<Record<string, boolean>>({});
+
+  // Brands with LinkedIn profiles
+  const brandsWithLinkedIn = (brands || []).filter((b) => b.founder_linkedin_url || b.company_linkedin_url);
+  const displayedLinkedInQueue = linkedinTabFilter === 'fallback' ? fallbackDmQueue : brandsWithLinkedIn;
 
   // State for Deal Modal
   const [dealModalBrand, setDealModalBrand] = useState<Brand | null>(null);
@@ -107,6 +121,57 @@ export const ActionQueuePage: React.FC = () => {
     toast.success(`DM untuk ${brand.founder_name || brand.company_name} ditandai terkirim!`);
   };
 
+  // Action: Generate LinkedIn Pitch via Nova AI
+  const handleGenerateLinkedInPitch = async (brand: Brand) => {
+    setIsGeneratingLinkedIn((prev) => ({ ...prev, [brand.id]: true }));
+    try {
+      const res = await BrandService.generateLinkedInPitch({
+        brandId: brand.id,
+        companyName: brand.company_name,
+        domain: brand.domain,
+        productSummary: brand.product_summary || undefined,
+        founderName: brand.founder_name || undefined,
+        primaryPicName: brand.primary_pic_name || undefined,
+        primaryPicRole: brand.primary_pic_role || undefined,
+        founderLinkedinUrl: brand.founder_linkedin_url || undefined,
+        companyLinkedinUrl: brand.company_linkedin_url || undefined,
+        nicheCategory: brand.niche_category || undefined,
+        country: brand.country || undefined,
+      });
+
+      setLinkedinDrafts((prev) => ({
+        ...prev,
+        [brand.id]: {
+          connectionNote: res.connectionNote,
+          inmailPitch: res.inmailPitch,
+        },
+      }));
+      toast.success(`Draf LinkedIn untuk ${brand.founder_name || brand.company_name} berhasil dibuat oleh Nova!`);
+    } catch (e: any) {
+      toast.error('Gagal membuat draf LinkedIn: ' + (e?.message || 'Error'));
+    } finally {
+      setIsGeneratingLinkedIn((prev) => ({ ...prev, [brand.id]: false }));
+    }
+  };
+
+  // Action: Buka Profil & Salin Pesan LinkedIn
+  const handleOpenAndCopyLinkedIn = (brand: Brand, textToCopy: string, targetUrl: string) => {
+    navigator.clipboard.writeText(textToCopy);
+    toast.success('Pesan LinkedIn disalin ke clipboard! Membuka profil LinkedIn target...');
+    window.open(targetUrl || 'https://linkedin.com', '_blank');
+  };
+
+  // Action: Tandai Terhubung via LinkedIn
+  const handleMarkLinkedInSent = async (brand: Brand) => {
+    await updateBrand(brand.id, {
+      pipeline_status: 'in_progress',
+      outreach_channel: 'dm_founder',
+      last_contacted_at: new Date().toISOString(),
+      notes: `${brand.notes ? brand.notes + ' | ' : ''}[LINKEDIN OUTREACH] Terhubung via LinkedIn (${new Date().toLocaleDateString('id-ID')}).`,
+    });
+    toast.success(`LinkedIn Outreach untuk ${brand.founder_name || brand.company_name} ditandai aktif!`);
+  };
+
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       {/* Header */}
@@ -142,8 +207,9 @@ export const ActionQueuePage: React.FC = () => {
           </TabsTrigger>
 
           <TabsTrigger value="fallback" className="text-xs gap-2 py-2">
-            <span>Jalur DM Founder</span>
-            <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-500">
+            <Linkedin className="h-3.5 w-3.5 text-blue-500" />
+            <span>LinkedIn & DM Founder</span>
+            <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-500">
               {fallbackDmQueue.length}
             </span>
           </TabsTrigger>
@@ -382,112 +448,272 @@ export const ActionQueuePage: React.FC = () => {
           )}
         </TabsContent>
 
-        {/* TAB 3: Jalur Alternatif / DM Founder */}
+        {/* TAB 3: Jalur Alternatif / LinkedIn & DM Founder */}
         <TabsContent value="fallback" className="space-y-4">
-          {fallbackDmQueue.length === 0 ? (
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-muted/40 rounded-xl border border-border/70 text-xs">
+            <div className="flex items-center gap-2">
+              <Linkedin className="h-4 w-4 text-blue-500" />
+              <span className="font-semibold text-foreground">Filter Antrean Social Selling:</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Button
+                size="sm"
+                variant={linkedinTabFilter === 'fallback' ? 'secondary' : 'ghost'}
+                onClick={() => setLinkedinTabFilter('fallback')}
+                className="h-7 text-[11px] gap-1 px-2.5 font-medium"
+              >
+                <span>H+14 Email Hening</span>
+                <Badge variant="outline" className="text-[10px] px-1 py-0 h-4">
+                  {fallbackDmQueue.length}
+                </Badge>
+              </Button>
+              <Button
+                size="sm"
+                variant={linkedinTabFilter === 'all' ? 'secondary' : 'ghost'}
+                onClick={() => setLinkedinTabFilter('all')}
+                className="h-7 text-[11px] gap-1 px-2.5 font-medium"
+              >
+                <span>Semua Target Ber-LinkedIn</span>
+                <Badge variant="outline" className="text-[10px] px-1 py-0 h-4">
+                  {brandsWithLinkedIn.length}
+                </Badge>
+              </Button>
+            </div>
+          </div>
+
+          {displayedLinkedInQueue.length === 0 ? (
             <Card className="p-12 text-center text-muted-foreground space-y-2">
-              <CheckCircle2 className="h-8 w-8 text-emerald-500 mx-auto" />
-              <p className="text-sm font-semibold text-foreground">Tidak Ada Antrean DM Founder</p>
-              <p className="text-xs">Brand yang tidak membalas setelah 2x follow-up akan otomatis masuk ke sini.</p>
+              <CheckCircle2 className="h-8 w-8 text-blue-500 mx-auto" />
+              <p className="text-sm font-semibold text-foreground">
+                {linkedinTabFilter === 'fallback'
+                  ? 'Tidak Ada Antrean H+14 DM Founder'
+                  : 'Belum Ada Brand dengan Profil LinkedIn Terdeteksi'}
+              </p>
+              <p className="text-xs">
+                {linkedinTabFilter === 'fallback'
+                  ? 'Brand yang tidak membalas setelah 2x follow-up akan otomatis masuk ke sini untuk penjangkauan LinkedIn.'
+                  : 'Jalankan Riset AI di Mission Control untuk melacak akun LinkedIn founder brand secara otomatis.'}
+              </p>
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {fallbackDmQueue.map((brand) => (
-                <Card key={brand.id} className="border-border/80 shadow-sm flex flex-col justify-between">
-                  <div>
-                    <CardHeader className="p-4 pb-2">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <CardTitle className="text-sm font-bold flex items-center gap-2">
-                            {brand.company_name}
-                            <Badge variant="outline" className="text-[10px]">
-                              {brand.country}
-                            </Badge>
-                          </CardTitle>
-                          <p className="text-xs text-muted-foreground font-mono mt-0.5">
-                            {brand.domain}
-                          </p>
-                        </div>
-                        <Badge variant="warning" className="text-[10px]">
-                          2x Follow-up Hening
-                        </Badge>
-                      </div>
-                    </CardHeader>
+              {displayedLinkedInQueue.map((brand) => {
+                const targetUrl = brand.founder_linkedin_url || brand.company_linkedin_url || brand.founder_instagram_url || 'https://linkedin.com';
+                const targetName = brand.founder_name || brand.primary_pic_name || 'Founder';
+                const targetRole = brand.primary_pic_role || (brand.founder_name ? 'Founder / CEO' : 'Partnership Team');
+                const isGenerating = !!isGeneratingLinkedIn[brand.id];
 
-                    <CardContent className="p-4 pt-2 space-y-3 text-xs">
-                      {/* Founder Info & Links */}
-                      <div className="p-3 rounded-lg bg-card border border-border/80 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="font-semibold text-foreground">
-                            Founder: {brand.founder_name || 'Founder'}
-                          </span>
-                          <div className="flex items-center gap-1.5">
+                // Active format selection for this brand
+                const currentFormat = linkedinFormat[brand.id] || 'connection_note';
+
+                // Drafts resolution
+                const savedDraft = linkedinDrafts[brand.id];
+                const fallbackNote = `Hi ${targetName}! Huge fan of what you're building with ${brand.company_name}. Following from Indonesia where I create tech & dev education for 180k+ engineers. Would love to connect and share a few ideas on your SEA reach!`;
+                const fallbackPitch = brand.dm_fallback_message || `Hi ${targetName},\n\nReally impressed by ${brand.company_name} and how it streamlines workflows. Following your growth closely from Indonesia.\n\nI run a 180k+ tech & software engineering community here, educating developers and productivity-focused professionals. We're putting together a deep-dive breakdown on modern tools and would love to showcase ${brand.company_name}.\n\nHappy to share our 1-page demographic kit or a quick concept if SEA creator partnerships are on your radar this quarter!`;
+
+                const activeText =
+                  currentFormat === 'connection_note'
+                    ? savedDraft?.connectionNote || fallbackNote
+                    : savedDraft?.inmailPitch || fallbackPitch;
+
+                const charCount = activeText.length;
+                const isConnectionNote = currentFormat === 'connection_note';
+
+                return (
+                  <Card key={brand.id} className="border-border/80 shadow-sm flex flex-col justify-between">
+                    <div>
+                      <CardHeader className="p-4 pb-2">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <CardTitle className="text-sm font-bold flex items-center gap-2">
+                              {brand.company_name}
+                              <Badge variant="outline" className="text-[10px]">
+                                {brand.country}
+                              </Badge>
+                              {brand.niche_category && (
+                                <Badge variant="secondary" className="text-[10px]">
+                                  {brand.niche_category}
+                                </Badge>
+                              )}
+                            </CardTitle>
+                            <p className="text-xs text-muted-foreground font-mono mt-0.5">
+                              {brand.domain}
+                            </p>
+                          </div>
+                          <Badge
+                            variant={brand.pipeline_status === 'fallback_dm' ? 'warning' : 'outline'}
+                            className="text-[10px]"
+                          >
+                            {brand.pipeline_status === 'fallback_dm' ? 'H+14 Email Hening' : brand.pipeline_status}
+                          </Badge>
+                        </div>
+                      </CardHeader>
+
+                      <CardContent className="p-4 pt-2 space-y-3 text-xs">
+                        {/* Target PIC & Direct Social Buttons */}
+                        <div className="p-3 rounded-lg bg-card border border-border/80 flex items-center justify-between">
+                          <div>
+                            <div className="font-semibold text-foreground flex items-center gap-1.5">
+                              <span>Target: {targetName}</span>
+                              <span className="text-[11px] text-muted-foreground font-normal">
+                                ({targetRole})
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">
+                              {brand.product_summary || 'Produk teknologi global'}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {brand.founder_linkedin_url ? (
+                              <a
+                                href={brand.founder_linkedin_url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1 px-2 py-1 rounded bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 text-[11px] font-medium transition-colors"
+                                title="Buka LinkedIn Pribadi Founder"
+                              >
+                                <Linkedin className="h-3.5 w-3.5" />
+                                <span>Profil</span>
+                              </a>
+                            ) : brand.company_linkedin_url ? (
+                              <a
+                                href={brand.company_linkedin_url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1 px-2 py-1 rounded bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 text-[11px] font-medium transition-colors"
+                                title="Buka LinkedIn Perusahaan"
+                              >
+                                <Linkedin className="h-3.5 w-3.5" />
+                                <span>Company</span>
+                              </a>
+                            ) : null}
+
                             {brand.founder_instagram_url && (
                               <a
                                 href={brand.founder_instagram_url}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="p-1.5 rounded bg-pink-500/10 text-pink-500 hover:bg-pink-500/20"
+                                className="p-1 rounded bg-pink-500/10 text-pink-500 hover:bg-pink-500/20 transition-colors"
                                 title="Buka Instagram Founder"
                               >
                                 <Instagram className="h-3.5 w-3.5" />
                               </a>
                             )}
-                            {brand.founder_linkedin_url && (
-                              <a
-                                href={brand.founder_linkedin_url}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="p-1.5 rounded bg-blue-500/10 text-blue-500 hover:bg-blue-500/20"
-                                title="Buka LinkedIn Founder"
-                              >
-                                <Linkedin className="h-3.5 w-3.5" />
-                              </a>
-                            )}
                           </div>
                         </div>
-                      </div>
 
-                      {/* DM Fallback Message Box */}
-                      <div className="space-y-1.5">
-                        <span className="font-semibold text-foreground flex items-center justify-between">
-                          <span>Draf Pesan DM (Singkat & Santai):</span>
-                          <button
-                            onClick={() => copyToClipboard(brand.dm_fallback_message || '', 'Pesan DM')}
-                            className="text-[11px] text-primary hover:underline flex items-center gap-1"
-                          >
-                            <Copy className="h-3 w-3" />
-                            <span>Copy Pesan DM</span>
-                          </button>
-                        </span>
-                        <div className="p-3 rounded-lg bg-muted/40 border border-border/70 text-foreground text-xs font-mono leading-relaxed select-all">
-                          {brand.dm_fallback_message || 'Hi, just dropped a quick email about our Indonesian audience expansion!'}
+                        {/* Format Switcher */}
+                        <div className="space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <div className="inline-flex p-0.5 rounded-lg bg-muted border border-border/60">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setLinkedinFormat((prev) => ({ ...prev, [brand.id]: 'connection_note' }))
+                                }
+                                className={`px-2.5 py-1 rounded text-[11px] font-medium transition-colors ${
+                                  currentFormat === 'connection_note'
+                                    ? 'bg-background text-foreground shadow-sm'
+                                    : 'text-muted-foreground hover:text-foreground'
+                                }`}
+                              >
+                                🔗 Connection Note (≤300 kar)
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setLinkedinFormat((prev) => ({ ...prev, [brand.id]: 'inmail_pitch' }))
+                                }
+                                className={`px-2.5 py-1 rounded text-[11px] font-medium transition-colors ${
+                                  currentFormat === 'inmail_pitch'
+                                    ? 'bg-background text-foreground shadow-sm'
+                                    : 'text-muted-foreground hover:text-foreground'
+                                }`}
+                              >
+                                💬 InMail / DM Pitch
+                              </button>
+                            </div>
+
+                            {/* Character Counter for Connection Note */}
+                            {isConnectionNote && (
+                              <span
+                                className={`font-mono text-[10px] font-semibold px-1.5 py-0.5 rounded border ${
+                                  charCount <= 290
+                                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                                    : charCount <= 300
+                                    ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+                                    : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
+                                }`}
+                              >
+                                {charCount}/300 kar
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Message Box */}
+                          <div className="relative group">
+                            <div className="p-3 rounded-lg bg-muted/40 border border-border/70 text-foreground text-xs font-mono leading-relaxed select-all min-h-[72px] whitespace-pre-wrap">
+                              {activeText}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => copyToClipboard(activeText, isConnectionNote ? 'Connection Note' : 'InMail Pitch')}
+                              className="absolute top-2 right-2 p-1.5 rounded-md bg-background/80 hover:bg-background border border-border/80 text-muted-foreground hover:text-foreground opacity-80 group-hover:opacity-100 transition-opacity"
+                              title="Salin teks"
+                            >
+                              <Copy className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
                         </div>
+                      </CardContent>
+                    </div>
+
+                    <CardFooter className="p-4 pt-0 border-t border-border/50 pt-3 flex flex-wrap items-center justify-between gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={isGenerating}
+                        onClick={() => handleGenerateLinkedInPitch(brand)}
+                        className="h-8 text-xs gap-1.5 text-blue-500 hover:text-blue-600 border-blue-500/30 hover:border-blue-500/50 hover:bg-blue-500/10"
+                      >
+                        {isGenerating ? (
+                          <>
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            <span>Menyusun...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="h-3.5 w-3.5" />
+                            <span>Nova AI: Buat Ulang</span>
+                          </>
+                        )}
+                      </Button>
+
+                      <div className="flex items-center gap-1.5">
+                        <Button
+                          size="sm"
+                          onClick={() => handleOpenAndCopyLinkedIn(brand, activeText, targetUrl)}
+                          className="h-8 text-xs gap-1.5 bg-blue-600 hover:bg-blue-500 text-white font-medium shadow-sm"
+                        >
+                          <Share2 className="h-3.5 w-3.5" />
+                          <span>Buka &amp; Salin</span>
+                        </Button>
+
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => handleMarkLinkedInSent(brand)}
+                          className="h-8 text-xs gap-1"
+                        >
+                          <Send className="h-3.5 w-3.5" />
+                          <span>Tandai Terhubung</span>
+                        </Button>
                       </div>
-                    </CardContent>
-                  </div>
-
-                  <CardFooter className="p-4 pt-0 border-t border-border/50 pt-3 flex items-center justify-between gap-2">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleMarkCancelled(brand)}
-                      className="h-8 text-xs text-muted-foreground hover:text-rose-400"
-                    >
-                      Batal
-                    </Button>
-
-                    <Button
-                      size="sm"
-                      onClick={() => handleMarkDmSent(brand)}
-                      className="h-8 text-xs gap-1.5"
-                    >
-                      <Send className="h-3.5 w-3.5" />
-                      <span>Tandai DM Terkirim</span>
-                    </Button>
-                  </CardFooter>
-                </Card>
-              ))}
+                    </CardFooter>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </TabsContent>

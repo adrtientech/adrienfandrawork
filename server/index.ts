@@ -13,6 +13,7 @@ import { runVerifierAgent } from './agents/03-verifier.js';
 import { runOutreachAgent } from './agents/04-outreach.js';
 import { runSyncInboxAgent } from './agents/05-inbox-watcher.js';
 import { runFollowupAgent } from './agents/06-followup.js';
+import { generateLinkedInPitch } from './agents/06-linkedin.js';
 import { runManagerChat, getStoredChatHistory, resetStoredChatHistory } from './agents/06-manager-chat.js';
 import { generateBoardroomTurn, BOARDROOM_ROSTER } from './agents/07-boardroom.js';
 import { getExcludedBrands, addExcludedBrand, removeExcludedBrand } from './excluded-brands.js';
@@ -163,6 +164,50 @@ app.post('/api/agents/followup', async (req, res) => {
     res.json(result);
   } catch (err: any) {
     console.error('Error in /api/agents/followup:', err);
+    res.status(500).json({ success: false, message: err.message || 'Internal Server Error' });
+  }
+});
+
+// 6b. Tahap C2: Nova AI LinkedIn Social Selling & Connection Pitch Generator
+app.post('/api/agents/linkedin-pitch', async (req, res) => {
+  try {
+    const {
+      brandId,
+      companyName,
+      domain,
+      productSummary,
+      founderName,
+      primaryPicName,
+      primaryPicRole,
+      founderLinkedinUrl,
+      companyLinkedinUrl,
+      nicheCategory,
+      country,
+      customAngle,
+    } = req.body || {};
+
+    if (!companyName) {
+      return res.status(400).json({ success: false, message: 'companyName wajib disertakan.' });
+    }
+
+    const result = await generateLinkedInPitch({
+      brandId,
+      companyName,
+      domain,
+      productSummary,
+      founderName,
+      primaryPicName,
+      primaryPicRole,
+      founderLinkedinUrl,
+      companyLinkedinUrl,
+      nicheCategory,
+      country,
+      customAngle,
+    });
+
+    res.json({ success: true, data: result });
+  } catch (err: any) {
+    console.error('Error in /api/agents/linkedin-pitch:', err);
     res.status(500).json({ success: false, message: err.message || 'Internal Server Error' });
   }
 });
