@@ -24,7 +24,8 @@ import {
   Volume2,
   SlidersHorizontal,
   ChevronDown,
-  Info
+  Info,
+  X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -393,26 +394,26 @@ export const BoardroomPage: React.FC = () => {
   ];
 
   return (
-    <div className="flex flex-col lg:flex-row h-screen overflow-hidden bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans">
+    <div className="flex flex-col lg:flex-row h-[calc(100dvh-7rem)] md:h-screen overflow-hidden bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans">
       {/* =====================================================================
           KOLOM UTAMA: ARENA RUANG RAPAT (GROUP CHAT STREAM)
       ===================================================================== */}
       <div className="flex-1 flex flex-col h-full bg-white dark:bg-zinc-900 border-r border-zinc-200/80 dark:border-zinc-800 min-w-0">
         {/* Top Header Bar */}
-        <div className="px-5 py-3 border-b border-zinc-200/80 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xs flex items-center justify-between shrink-0 z-10">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="h-9 w-9 rounded-xl bg-zinc-950 dark:bg-zinc-800 text-white flex items-center justify-center shadow-xs shrink-0">
-              <Users className="h-4.5 w-4.5 text-emerald-400" />
+        <div className="px-3 sm:px-5 py-2.5 sm:py-3 border-b border-zinc-200/80 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xs flex items-center justify-between shrink-0 z-10">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="h-8 w-8 sm:h-9 sm:📐-9 rounded-xl bg-zinc-950 dark:bg-zinc-800 text-white flex items-center justify-center shadow-xs shrink-0">
+              <Users className="h-4 w-4 sm:h-4.5 sm:w-4.5 text-emerald-400" />
             </div>
             <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <h1 className="font-semibold text-sm tracking-tight text-zinc-900 dark:text-zinc-100 truncate">
-                  Ruang Rapat Eksekutif Tim AI
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <h1 className="font-semibold text-xs sm:text-sm tracking-tight text-zinc-900 dark:text-zinc-100 truncate">
+                  Ruang Rapat Eksekutif
                 </h1>
                 <Badge
                   variant="outline"
                   className={cn(
-                    'text-[10px] font-mono font-medium px-2 py-0.5 rounded-full flex items-center gap-1.5 transition-colors',
+                    'text-[9px] sm:text-[10px] font-mono font-medium px-1.5 sm:px-2 py-0.5 rounded-full flex items-center gap-1 transition-colors shrink-0',
                     isAutoPlaying
                       ? 'bg-emerald-50 text-emerald-700 border-emerald-200/80 dark:bg-emerald-950/40 dark:text-emerald-300'
                       : 'bg-amber-50 text-amber-700 border-amber-200/80 dark:bg-amber-950/40 dark:text-amber-300'
@@ -424,38 +425,38 @@ export const BoardroomPage: React.FC = () => {
                       isAutoPlaying ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
                     )}
                   />
-                  <span>{isAutoPlaying ? 'Rapat Aktif (Auto-Debate)' : 'Hening (Mendengarkan Bos)'}</span>
+                  <span>{isAutoPlaying ? 'Aktif' : 'Hening'}</span>
                 </Badge>
               </div>
-              <p className="text-[11px] text-zinc-400 dark:text-zinc-500 truncate mt-0.5">
+              <p className="text-[10px] sm:text-[11px] text-zinc-400 dark:text-zinc-500 truncate mt-0.5 hidden xs:block">
                 Evaluasi Kinerja Silang Jobdesk & Kolaborasi Strategis 6 Agen AI
               </p>
             </div>
           </div>
 
           {/* Action Buttons Top */}
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             {isAutoPlaying ? (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleBossSilence}
-                className="h-8 text-xs font-medium text-amber-700 bg-amber-50/70 hover:bg-amber-100 border-amber-200 dark:bg-amber-950/40 dark:border-amber-800 dark:text-amber-300 gap-1.5"
+                className="h-7 sm:h-8 px-2 sm:px-2.5 text-xs font-medium text-amber-700 bg-amber-50/70 hover:bg-amber-100 border-amber-200 dark:bg-amber-950/40 dark:border-amber-800 dark:text-amber-300 gap-1 sm:gap-1.5"
                 title="Hentikan sementara agar Bos bisa bicara"
               >
                 <Hand className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">✋ Hentikan Rapat</span>
+                <span className="hidden sm:inline">✋ Hentikan</span>
               </Button>
             ) : (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleBossResume}
-                className="h-8 text-xs font-medium text-emerald-700 bg-emerald-50/70 hover:bg-emerald-100 border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-300 gap-1.5"
+                className="h-7 sm:h-8 px-2 sm:px-2.5 text-xs font-medium text-emerald-700 bg-emerald-50/70 hover:bg-emerald-100 border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-300 gap-1 sm:gap-1.5"
                 title="Lanjutkan dialog otomatis antar staf AI"
               >
                 <Play className="h-3.5 w-3.5 fill-current" />
-                <span className="hidden sm:inline">▶️ Lanjutkan Rapat</span>
+                <span className="hidden sm:inline">▶️ Lanjut</span>
               </Button>
             )}
 
@@ -463,29 +464,30 @@ export const BoardroomPage: React.FC = () => {
               variant="outline"
               size="sm"
               onClick={handleStartMeeting}
-              className="h-8 text-xs font-medium text-zinc-700 hover:text-zinc-950 dark:text-zinc-300 dark:hover:text-white bg-white hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 border-zinc-200 dark:border-zinc-700 gap-1.5"
+              className="h-7 sm:h-8 px-2 sm:px-2.5 text-xs font-medium text-zinc-700 hover:text-zinc-950 dark:text-zinc-300 dark:hover:text-white bg-white hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 border-zinc-200 dark:border-zinc-700 gap-1 sm:gap-1.5"
               title="Mulai rapat dari awal"
             >
               <RotateCcw className="h-3.5 w-3.5 text-zinc-400" />
-              <span className="hidden sm:inline">Mulai Rapat Baru</span>
+              <span className="hidden md:inline">Reset</span>
             </Button>
 
             <Button
               variant="outline"
               size="sm"
               onClick={handleCopyTranscript}
-              className="h-8 text-xs font-medium text-zinc-700 hover:text-zinc-950 dark:text-zinc-300 dark:hover:text-white bg-white hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 border-zinc-200 dark:border-zinc-700 gap-1.5"
+              className="h-7 sm:h-8 px-2 sm:px-2.5 text-xs font-medium text-zinc-700 hover:text-zinc-950 dark:text-zinc-300 dark:hover:text-white bg-white hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 border-zinc-200 dark:border-zinc-700 gap-1 sm:gap-1.5"
               title="Salin transkrip dialog rapat"
             >
               {copiedTranscript ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5 text-zinc-400" />}
-              <span className="hidden sm:inline">Salin Notulen</span>
+              <span className="hidden md:inline">Notulen</span>
             </Button>
 
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setShowRosterMobile(!showRosterMobile)}
-              className="h-8 px-2 text-zinc-500 lg:hidden"
+              className="h-7 sm:h-8 px-2 text-zinc-500 lg:hidden"
+              title="Lihat Daftar Peserta Rapat"
             >
               <Users className="h-4 w-4" />
             </Button>
@@ -675,8 +677,8 @@ export const BoardroomPage: React.FC = () => {
         </div>
 
         {/* Boss Input Bar */}
-        <div className="p-4 border-t border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 shrink-0">
-          <div className="flex items-center gap-2">
+        <div className="p-2.5 sm:p-4 border-t border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <div className="relative flex-1">
               <input
                 type="text"
@@ -688,29 +690,30 @@ export const BoardroomPage: React.FC = () => {
                     handleSendBossMessage();
                   }
                 }}
-                placeholder="Beri instruksi, evaluasi, kritik, atau ajukan pertanyaan ke tim (Posisi Anda: Bos)..."
-                className="w-full bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-2.5 text-xs sm:text-[13px] text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all shadow-2xs"
+                placeholder="Beri instruksi atau evaluasi tim (Posisi Anda: Bos)..."
+                className="w-full bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-[13px] text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all shadow-2xs"
               />
             </div>
 
             <Button
               onClick={() => handleSendBossMessage()}
               disabled={!bossInput.trim() || isProcessing}
-              className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl h-10 px-4 text-xs font-semibold shadow-xs flex items-center gap-1.5 shrink-0"
+              className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl h-9 sm:h-10 px-3 sm:px-4 text-xs font-semibold shadow-xs flex items-center gap-1.5 shrink-0"
             >
               <Send className="h-3.5 w-3.5" />
-              <span>Instruksi Bos</span>
+              <span className="hidden xs:inline">Instruksi Bos</span>
+              <span className="xs:hidden">Kirim</span>
             </Button>
           </div>
 
-          <div className="mt-2 flex items-center justify-between text-[11px] text-zinc-400 dark:text-zinc-500">
-            <span className="flex items-center gap-1.5">
-              <Hand className="h-3 w-3 text-amber-500" />
-              <span>
-                Ketika Anda mengetik / chat, <b>seluruh AI otomatis hening</b> dan membiarkan Anda berbicara.
+          <div className="mt-1.5 sm:mt-2 flex items-center justify-between text-[10px] sm:text-[11px] text-zinc-400 dark:text-zinc-500">
+            <span className="flex items-center gap-1">
+              <Hand className="h-3 w-3 text-amber-500 shrink-0" />
+              <span className="truncate">
+                Saat Anda mengetik, <b>seluruh AI otomatis hening</b>.
               </span>
             </span>
-            <span className="hidden sm:inline">Tekan Enter untuk mengirim</span>
+            <span className="hidden sm:inline">Tekan Enter untuk kirim</span>
           </div>
         </div>
       </div>
@@ -718,22 +721,45 @@ export const BoardroomPage: React.FC = () => {
       {/* =====================================================================
           KOLOM KANAN: DAFTAR HADIR PESERTA RAPAT (ROSTER PANEL)
       ===================================================================== */}
+      {/* Overlay Backdrop for Mobile Roster */}
+      {showRosterMobile && (
+        <div
+          className="fixed inset-0 bg-black/60 z-40 lg:hidden backdrop-blur-xs transition-opacity"
+          onClick={() => setShowRosterMobile(false)}
+        />
+      )}
+
       <div
         className={cn(
-          'w-full lg:w-72 xl:w-80 shrink-0 bg-zinc-50/50 dark:bg-zinc-950/60 flex flex-col h-full border-t lg:border-t-0 lg:border-l border-zinc-200/80 dark:border-zinc-800 select-none',
-          showRosterMobile ? 'block' : 'hidden lg:flex'
+          'bg-zinc-50/50 dark:bg-zinc-950/60 flex flex-col border-zinc-200/80 dark:border-zinc-800 select-none transition-all',
+          'lg:w-72 xl:w-80 lg:shrink-0 lg:h-full lg:border-l lg:flex',
+          showRosterMobile
+            ? 'fixed inset-y-0 right-0 w-80 max-w-[85vw] z-50 bg-white dark:bg-zinc-950 shadow-2xl flex border-l'
+            : 'hidden lg:flex'
         )}
       >
-        <div className="p-4 border-b border-zinc-200/80 dark:border-zinc-800 flex items-center justify-between bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xs">
+        <div className="p-3.5 sm:p-4 border-b border-zinc-200/80 dark:border-zinc-800 flex items-center justify-between bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xs">
           <div className="flex items-center gap-2">
             <Users className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
             <h2 className="font-semibold text-xs text-zinc-900 dark:text-zinc-100 uppercase tracking-wider">
               Peserta Meja Rapat (8)
             </h2>
           </div>
-          <Badge variant="outline" className="text-[10px] bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
-            Lengkap
-          </Badge>
+          <div className="flex items-center gap-1.5">
+            <Badge variant="outline" className="text-[10px] bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
+              Lengkap
+            </Badge>
+            {showRosterMobile && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowRosterMobile(false)}
+                className="h-7 w-7 lg:hidden text-zinc-500 hover:text-zinc-900"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Participant Cards List */}

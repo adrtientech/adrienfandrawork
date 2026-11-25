@@ -88,6 +88,7 @@ export const MissionControlPage: React.FC = () => {
   const [isDiscovering, setIsDiscovering] = useState(false);
   const [isCheckingInbox, setIsCheckingInbox] = useState(false);
   const [isRunningFullPipeline, setIsRunningFullPipeline] = useState(false);
+  const [mobileTab, setMobileTab] = useState<'chat' | 'operations'>('chat');
 
   // Circuit Breaker Status
   const isCircuitBreakerTriggered = (settings.bounces_today || 0) > (settings.max_daily_bounces || 2);
@@ -349,41 +350,77 @@ export const MissionControlPage: React.FC = () => {
   ];
 
   return (
-    <div className="flex flex-col lg:flex-row h-screen overflow-hidden bg-white text-zinc-900 font-sans">
+    <div className="flex flex-col lg:flex-row h-[calc(100dvh-7rem)] md:h-screen overflow-hidden bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans">
+      {/* Mobile Tab Switcher (Visible only on phone/tablet < lg) */}
+      <div className="flex lg:hidden items-center border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 p-1.5 gap-1 shrink-0">
+        <button
+          type="button"
+          onClick={() => setMobileTab('chat')}
+          className={cn(
+            "flex-1 py-1.5 px-3 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5",
+            mobileTab === 'chat'
+              ? "bg-white dark:bg-zinc-800 text-zinc-950 dark:text-white shadow-2xs"
+              : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400"
+          )}
+        >
+          <Bot className="h-3.5 w-3.5" />
+          <span>Chat AI Manager</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileTab('operations')}
+          className={cn(
+            "flex-1 py-1.5 px-3 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5",
+            mobileTab === 'operations'
+              ? "bg-white dark:bg-zinc-800 text-zinc-950 dark:text-white shadow-2xs"
+              : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400"
+          )}
+        >
+          <Zap className="h-3.5 w-3.5 text-amber-500" />
+          <span>Kontrol & Metrik ({brands.length})</span>
+        </button>
+      </div>
+
       {/* Kolom Kiri: AI Manager Chat Interface */}
-      <div className="flex-1 flex flex-col h-full border-r border-zinc-200/80 bg-white min-w-0">
+      <div
+        className={cn(
+          "flex-1 flex flex-col h-full border-r border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-950 min-w-0",
+          mobileTab === 'chat' ? "flex" : "hidden lg:flex"
+        )}
+      >
         {/* Top Header */}
-        <div className="px-5 py-3 border-b border-zinc-200/70 flex items-center justify-between bg-white shrink-0">
-          <div className="flex items-center gap-2.5">
-            <div className="h-7 w-7 rounded-md bg-zinc-950 text-white flex items-center justify-center shadow-xs">
+        <div className="px-3.5 sm:px-5 py-2.5 sm:py-3 border-b border-zinc-200/70 dark:border-zinc-800 flex items-center justify-between bg-white dark:bg-zinc-950 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+            <div className="h-7 w-7 rounded-md bg-zinc-950 dark:bg-zinc-100 text-white dark:text-zinc-900 flex items-center justify-center shadow-xs shrink-0">
               <Bot className="h-4 w-4" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="font-semibold text-[13px] tracking-tight text-zinc-900 leading-tight">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <h1 className="font-semibold text-xs sm:text-[13px] tracking-tight text-zinc-900 dark:text-zinc-100 leading-tight truncate">
                   Outbound AI Manager
                 </h1>
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-mono font-medium bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9.5px] sm:text-[10px] font-mono font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/80 shrink-0">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   Live Sync
                 </span>
               </div>
-              <p className="text-[11px] text-zinc-400 leading-none mt-0.5">
+              <p className="text-[10px] sm:text-[11px] text-zinc-400 dark:text-zinc-500 leading-none mt-0.5 truncate hidden xs:block">
                 Strategic Deal Maker & Otomasi Tim Karyawan AI
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <Link to="/boardroom">
               <Button
                 variant="outline"
                 size="sm"
                 title="Buka Ruang Rapat Tim & Evaluasi Lintas Jobdesk"
-                className="text-[11px] font-medium text-emerald-700 hover:text-emerald-950 bg-emerald-50/70 hover:bg-emerald-100 border-emerald-200/90 h-7 px-2.5 gap-1.5 craft-button shadow-2xs"
+                className="text-[10.5px] sm:text-[11px] font-medium text-emerald-700 hover:text-emerald-950 dark:text-emerald-400 bg-emerald-50/70 hover:bg-emerald-100 dark:bg-emerald-950/40 border-emerald-200/90 dark:border-emerald-800 h-7 px-2 sm:px-2.5 gap-1 craft-button shadow-2xs"
               >
-                <Users className="h-3 w-3 text-emerald-600" />
-                <span>Ruang Rapat Tim</span>
+                <Users className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                <span className="hidden sm:inline">Ruang Rapat Tim</span>
+                <span className="sm:hidden">Rapat</span>
               </Button>
             </Link>
 
@@ -392,10 +429,11 @@ export const MissionControlPage: React.FC = () => {
               size="sm"
               onClick={handleClearHistory}
               title="Mulai Ulang Percakapan dengan Manajer Utama"
-              className="text-[11px] font-medium text-zinc-700 hover:text-zinc-950 bg-white hover:bg-zinc-100 border-zinc-200/90 h-7 px-2.5 gap-1.5 craft-button shadow-2xs"
+              className="text-[10.5px] sm:text-[11px] font-medium text-zinc-700 hover:text-zinc-950 dark:text-zinc-300 bg-white hover:bg-zinc-100 dark:bg-zinc-900 dark:hover:bg-zinc-800 border-zinc-200/90 dark:border-zinc-700 h-7 px-2 sm:px-2.5 gap-1 craft-button shadow-2xs"
             >
               <RotateCcw className="h-3 w-3 text-zinc-500" />
-              <span>Restart Chat</span>
+              <span className="hidden sm:inline">Restart Chat</span>
+              <span className="sm:hidden">Reset</span>
             </Button>
 
             <button
@@ -516,14 +554,14 @@ export const MissionControlPage: React.FC = () => {
         </div>
 
         {/* Quick Suggestion Chips */}
-        <div className="px-5 py-2 border-t border-zinc-200/70 bg-white flex items-center gap-1.5 overflow-x-auto shrink-0">
-          <span className="text-[10.5px] font-medium text-zinc-400 shrink-0">Tanya Cepat:</span>
+        <div className="px-3 sm:px-5 py-1.5 sm:py-2 border-t border-zinc-200/70 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex items-center gap-1.5 overflow-x-auto shrink-0 no-scrollbar">
+          <span className="text-[10px] sm:text-[10.5px] font-medium text-zinc-400 dark:text-zinc-500 shrink-0">Tanya Cepat:</span>
           {promptSuggestions.map((sug, i) => (
             <button
               key={i}
               onClick={() => handleSendMessage(sug)}
               disabled={isThinking}
-              className="text-[10.5px] px-2 py-0.5 rounded-md bg-zinc-100/70 hover:bg-zinc-200/60 text-zinc-600 hover:text-zinc-900 whitespace-nowrap transition-colors border border-zinc-200/60 craft-button"
+              className="text-[10px] sm:text-[10.5px] px-2 py-0.5 rounded-md bg-zinc-100/70 dark:bg-zinc-800/80 hover:bg-zinc-200/60 dark:hover:bg-zinc-700/80 text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white whitespace-nowrap transition-colors border border-zinc-200/60 dark:border-zinc-700/70 craft-button"
             >
               {sug}
             </button>
@@ -531,7 +569,7 @@ export const MissionControlPage: React.FC = () => {
         </div>
 
         {/* Input Bar */}
-        <div className="p-3 border-t border-zinc-200/70 bg-white shrink-0">
+        <div className="p-2 sm:p-3 border-t border-zinc-200/70 dark:border-zinc-800 bg-white dark:bg-zinc-950 shrink-0">
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -570,7 +608,12 @@ export const MissionControlPage: React.FC = () => {
       </div>
 
       {/* Kolom Kanan: High-Craft Live Operations Widget (Emil Kowalski Standards) */}
-      <div className="w-full lg:w-72 shrink-0 border-l border-zinc-200/80 bg-zinc-50/40 p-4 overflow-y-auto space-y-3.5 select-none">
+      <div
+        className={cn(
+          "w-full lg:w-72 shrink-0 border-l border-zinc-200/80 dark:border-zinc-800 bg-zinc-50/40 dark:bg-zinc-950/40 p-3 sm:p-4 overflow-y-auto space-y-3.5 select-none",
+          mobileTab === 'operations' ? "block flex-1 lg:flex-none" : "hidden lg:block"
+        )}
+      >
         <div>
           <h2 className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
             Live Operations Control

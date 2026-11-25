@@ -109,11 +109,11 @@ export const SettingsPage: React.FC = () => {
   };
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6">
+    <div className="p-3.5 sm:p-6 max-w-5xl mx-auto space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/80">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 pb-3 sm:pb-4 border-b border-border/80">
         <div>
-          <h1 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
+          <h1 className="text-lg sm:text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
             AI Brain & Controls
           </h1>
           <p className="text-xs text-muted-foreground mt-0.5">
@@ -121,26 +121,26 @@ export const SettingsPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <Button
             type="button"
             variant="outline"
             size="sm"
             onClick={resetAllData}
-            className="text-xs h-9 gap-1.5"
+            className="text-xs h-9 gap-1.5 flex-1 sm:flex-none justify-center"
           >
             <RotateCcw className="h-3.5 w-3.5" />
-            <span>Reset ke Default</span>
+            <span>Reset Default</span>
           </Button>
 
           <Button
             onClick={handleSave}
             disabled={isSaving}
             size="sm"
-            className="text-xs h-9 gap-1.5 shadow-sm"
+            className="text-xs h-9 gap-1.5 shadow-sm flex-1 sm:flex-none justify-center"
           >
             <Save className="h-4 w-4" />
-            <span>{isSaving ? 'Menyimpan...' : 'Simpan Pengaturan'}</span>
+            <span>{isSaving ? 'Menyimpan...' : 'Simpan'}</span>
           </Button>
         </div>
       </div>

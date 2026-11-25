@@ -407,11 +407,11 @@ export const PipelinePage: React.FC = () => {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-5">
+    <div className="p-3.5 sm:p-6 max-w-7xl mx-auto space-y-4 sm:space-y-5">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-border/80">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 pb-2 border-b border-border/80">
         <div>
-          <h1 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
+          <h1 className="text-lg sm:text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
             Brand Pipeline
             <Badge variant="secondary" className="font-mono text-xs">
               {filteredBrands.length} dari {brands.length}
@@ -426,7 +426,7 @@ export const PipelinePage: React.FC = () => {
         <Button
           onClick={() => setIsAddModalOpen(true)}
           size="sm"
-          className="text-xs h-9 gap-1.5 shadow-sm"
+          className="text-xs h-9 gap-1.5 shadow-sm w-full sm:w-auto justify-center"
         >
           <Plus className="h-4 w-4" />
           <span>Tambah Brand Manual</span>
@@ -434,8 +434,8 @@ export const PipelinePage: React.FC = () => {
       </div>
 
       {/* Filter Toolbar */}
-      <div className="p-4 rounded-xl border border-border/80 bg-card/60 backdrop-blur-sm space-y-3">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2.5">
+      <div className="p-3 sm:p-4 rounded-xl border border-border/80 bg-card/60 backdrop-blur-sm space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2 sm:gap-2.5">
           {/* Search Box */}
           <div className="relative md:col-span-2">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -531,8 +531,81 @@ export const PipelinePage: React.FC = () => {
         </div>
       </div>
 
-      {/* Interactive Table */}
-      <div className="rounded-xl border border-border/80 bg-card overflow-hidden shadow-sm">
+      {/* Mobile Card View (Tampilan Khusus HP / Layar Kecil) */}
+      <div className="sm:hidden space-y-2.5">
+        {filteredBrands.length === 0 ? (
+          <div className="p-8 text-center rounded-xl border border-border/80 bg-card text-muted-foreground">
+            <p className="font-semibold text-foreground text-sm">
+              {brands.length === 0 ? 'Belum ada brand di database' : 'Tidak ada brand yang cocok dengan filter'}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {brands.length === 0
+                ? 'Jalankan "Riset AI" di Mission Control atau tekan "Tambah Brand Manual" untuk memulai.'
+                : 'Coba ubah kata kunci pencarian atau reset filter.'}
+            </p>
+          </div>
+        ) : (
+          filteredBrands.map((brand) => (
+            <div
+              key={brand.id}
+              onClick={() => setSelectedBrandId(brand.id)}
+              className="p-3.5 rounded-xl border border-border/80 bg-card shadow-2xs active:bg-accent/40 transition-all cursor-pointer space-y-2.5 craft-button"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="font-semibold text-sm text-foreground truncate">
+                      {brand.company_name}
+                    </span>
+                    {brand.has_partner_program && (
+                      <span className="px-1.5 py-0.2 rounded text-[9px] font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+                        🤝 Partner
+                      </span>
+                    )}
+                    {brand.do_not_contact && (
+                      <span className="px-1.5 py-0.2 rounded text-[9px] font-semibold bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 border border-rose-200 dark:border-rose-800">
+                        ⛔ Blacklist
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[11px] font-mono text-muted-foreground block truncate">
+                    {brand.domain}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <div
+                    className={cn(
+                      'px-2 py-0.5 rounded-md font-mono text-xs font-bold border',
+                      (brand.ai_fit_score || 0) >= 80
+                        ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800'
+                        : (brand.ai_fit_score || 0) >= 50
+                        ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800'
+                        : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700'
+                    )}
+                  >
+                    {brand.ai_fit_score || 0}
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-border/50 flex items-center justify-between text-xs text-muted-foreground">
+                <div className="flex items-center gap-1.5 truncate">
+                  <span className="font-medium text-foreground">{brand.country}</span>
+                  <span>•</span>
+                  <span className="capitalize">{renderScaleLabel(brand.company_scale)}</span>
+                </div>
+                <div className="shrink-0">
+                  {renderStatusBadge(brand.pipeline_status)}
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Interactive Table (Tablet & Desktop) */}
+      <div className="hidden sm:block rounded-xl border border-border/80 bg-card overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>

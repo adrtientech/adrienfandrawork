@@ -485,7 +485,7 @@ export const TeamOrgChartPage: React.FC = () => {
   ];
 
   return (
-    <div className="p-6 max-w-[1440px] mx-auto space-y-8 pb-20">
+    <div className="p-3.5 sm:p-6 max-w-[1440px] mx-auto space-y-6 sm:space-y-8 pb-16 sm:pb-20">
       {/* =====================================================================
           HEADER UTAMA
       ===================================================================== */}
@@ -495,7 +495,7 @@ export const TeamOrgChartPage: React.FC = () => {
             <span className="p-2 rounded-lg bg-slate-900 text-white shadow-xs">
               <GitBranch className="h-5 w-5 text-blue-400" />
             </span>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
               Bagan Alur Kerja & Struktur Tim AI (A1 → C2)
             </h1>
             <Badge

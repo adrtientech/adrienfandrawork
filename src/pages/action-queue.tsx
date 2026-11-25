@@ -173,11 +173,11 @@ export const ActionQueuePage: React.FC = () => {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <div className="p-3.5 sm:p-6 max-w-7xl mx-auto space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="pb-4 border-b border-border/80">
+      <div className="pb-3 sm:pb-4 border-b border-border/80">
         <div className="flex items-center gap-2">
-          <h1 className="text-xl font-bold tracking-tight text-foreground">
+          <h1 className="text-lg sm:text-xl font-bold tracking-tight text-foreground">
             Action Queue
           </h1>
           <Badge variant="destructive" className="font-mono text-xs font-bold">
@@ -191,24 +191,24 @@ export const ActionQueuePage: React.FC = () => {
 
       {/* 3 Tabs */}
       <Tabs defaultValue="replies" className="space-y-4">
-        <TabsList className="bg-muted/70 p-1 rounded-xl grid grid-cols-3 max-w-xl">
-          <TabsTrigger value="replies" className="text-xs gap-2 py-2">
+        <TabsList className="bg-muted/70 p-1 rounded-xl flex overflow-x-auto sm:grid sm:grid-cols-3 max-w-xl no-scrollbar">
+          <TabsTrigger value="replies" className="text-[11px] sm:text-xs gap-1.5 sm:gap-2 py-1.5 sm:py-2 px-2 sm:px-3 whitespace-nowrap flex-1">
             <span>Balasan Masuk</span>
             <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-primary/20 text-primary">
               {replyQueue.length}
             </span>
           </TabsTrigger>
 
-          <TabsTrigger value="manual" className="text-xs gap-2 py-2">
-            <span>Kontak Marketing</span>
+          <TabsTrigger value="manual" className="text-[11px] sm:text-xs gap-1.5 sm:gap-2 py-1.5 sm:py-2 px-2 sm:px-3 whitespace-nowrap flex-1">
+            <span>Marketing WA</span>
             <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-500">
               {manualPhoneQueue.length}
             </span>
           </TabsTrigger>
 
-          <TabsTrigger value="fallback" className="text-xs gap-2 py-2">
-            <Linkedin className="h-3.5 w-3.5 text-blue-500" />
-            <span>LinkedIn & DM Founder</span>
+          <TabsTrigger value="fallback" className="text-[11px] sm:text-xs gap-1.5 sm:gap-2 py-1.5 sm:py-2 px-2 sm:px-3 whitespace-nowrap flex-1">
+            <Linkedin className="h-3.5 w-3.5 text-blue-500 shrink-0" />
+            <span>LinkedIn & DM</span>
             <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-500">
               {fallbackDmQueue.length}
             </span>
